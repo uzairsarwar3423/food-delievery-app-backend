@@ -1,0 +1,537 @@
+
+> food-delivery-backend@1.0.0 dev
+> nodemon src/server.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node src/server.js`[39m
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module 'dotenv'
+Require stack:
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/server.js:5:1)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/home/uzair/food-delivery-backend/src/server.js' ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+19:08:07 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+19:08:54 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+19:09:04 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+19:09:18 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+19:09:26 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+19:09:43 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+19:09:57 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  override existing env vars with { override: true }
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+(node:34393) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [Bus]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  override existing env vars with { override: true }
+node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module './v1/restaurant.routes'
+Require stack:
+- /home/uzair/food-delivery-backend/src/routes/index.js
+- /home/uzair/food-delivery-backend/src/app.js
+- /home/uzair/food-delivery-backend/src/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/home/uzair/food-delivery-backend/src/routes/index.js:7:26)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/home/uzair/food-delivery-backend/src/routes/index.js',
+    '/home/uzair/food-delivery-backend/src/app.js',
+    '/home/uzair/food-delivery-backend/src/server.js'
+  ]
+}
+
+Node.js v25.2.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+19:12:53 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+19:12:58 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+19:15:41 [[31merror[39m]: PrismaClientInitializationError: The provided database string is invalid. Error parsing connection string: invalid port number in database URL. Please refer to the documentation in https://www.prisma.io/docs/reference/database-reference/connection-urls for constructing a correct connection string. In some cases, certain characters must be escaped. Please check the string for any illegal characters.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1013"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+19:16:06 [[31merror[39m]: PrismaClientInitializationError: The provided database string is invalid. Error parsing connection string: invalid port number in database URL. Please refer to the documentation in https://www.prisma.io/docs/reference/database-reference/connection-urls for constructing a correct connection string. In some cases, certain characters must be escaped. Please check the string for any illegal characters.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1013"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+19:21:47 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `db.myjxkditcapwixjlburn.supabase.co:5432`
+
+Please make sure your database server is running at `db.myjxkditcapwixjlburn.supabase.co:5432`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+20:28:57 [[32minfo[39m]: [32m✅ Database connected[39m
+20:28:57 [[32minfo[39m]: [32mRedis client connected[39m
+20:28:57 [[32minfo[39m]: [32mRedis client ready[39m
+20:28:57 [[32minfo[39m]: [32m✅ Redis connected[39m
+20:28:57 [[31merror[39m]: Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at startServer (/home/uzair/food-delivery-backend/src/server.js:66:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {"code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":5000}
+20:28:57 [[32minfo[39m]: [32m[39m
+[32muncaughtException received. Shutting down gracefully...[39m
+20:28:57 [[32minfo[39m]: [32mHTTP server closed[39m
+20:28:57 [[32minfo[39m]: [32mDatabase disconnected[39m
+20:28:57 [[32minfo[39m]: [32mRedis disconnected[39m
+20:28:57 [[32minfo[39m]: [32mAll connections closed. Exiting.[39m
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+20:41:40 [[32minfo[39m]: [32m✅ Database connected[39m
+20:41:40 [[32minfo[39m]: [32mRedis client connected[39m
+20:41:40 [[32minfo[39m]: [32mRedis client ready[39m
+20:41:40 [[32minfo[39m]: [32m✅ Redis connected[39m
+20:41:40 [[31merror[39m]: Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at startServer (/home/uzair/food-delivery-backend/src/server.js:66:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {"code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":5000}
+20:41:40 [[32minfo[39m]: [32m[39m
+[32muncaughtException received. Shutting down gracefully...[39m
+20:41:40 [[32minfo[39m]: [32mHTTP server closed[39m
+20:41:40 [[32minfo[39m]: [32mDatabase disconnected[39m
+20:41:40 [[32minfo[39m]: [32mRedis disconnected[39m
+20:41:40 [[32minfo[39m]: [32mAll connections closed. Exiting.[39m
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+20:43:55 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `aws-1-ap-southeast-2.pooler.supabase.com:6543`
+
+Please make sure your database server is running at `aws-1-ap-southeast-2.pooler.supabase.com:6543`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node src/server.js`[39m
+[dotenv@17.3.1] injecting env (35) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+20:45:06 [[31merror[39m]: PrismaClientInitializationError: Can't reach database server at `aws-1-ap-southeast-2.pooler.supabase.com:6543`
+
+Please make sure your database server is running at `aws-1-ap-southeast-2.pooler.supabase.com:6543`.
+    at t (/home/uzair/food-delivery-backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+    at async startServer (/home/uzair/food-delivery-backend/src/server.js:58:9) {"name":"PrismaClientInitializationError","clientVersion":"5.22.0","errorCode":"P1001"}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
