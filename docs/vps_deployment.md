@@ -54,14 +54,62 @@ I have created a workflow in `.github/workflows/deploy.yml`. Here is what it doe
 3. **Connects** to your VPS via SSH.
 4. **Updates** the backend container with the latest code.
 
-## 5. SSL & Domain (Nginx)
+## 5. Setting up api.codewithuzair.cloud (DNS)
 
-To use a domain (e.g., `api.yourdomain.com`) with SSL (HTTPS):
+To point your domain from Hostinger to your VPS:
 
-1. Install Nginx: `sudo apt install nginx -y`
-2. Install Certbot: `sudo apt install certbot python3-certbot-nginx -y`
-3. Configure Nginx to proxy requests to port `5000`.
-4. Run `sudo certbot --nginx` to get your free SSL certificate.
+1. Log in to **Hostinger** > **Domains** > **DNS/Nameservers**.
+2. Add a new **A Record**:
+   - **Type**: `A`
+   - **Name**: `api` (this creates `api.codewithuzair.cloud`)
+   - **Points to**: `YOUR_VPS_IP`
+   - **TTL**: Default (e.g., 14400)
+3. Save the record. It may take a few minutes to propagate.
+
+## 6. SSL & Nginx Configuration
+
+On your VPS, install Nginx and Certbot:
+
+```bash
+sudo apt install nginx certbot python3-certbot-nginx -y
+```
+
+Create an Nginx configuration file for your API:
+
+```bash
+sudo nano /etc/nginx/sites-available/food-delivery-api
+```
+
+Paste this configuration (replace with your domain):
+
+```nginx
+server {
+    server_name api.codewithuzair.cloud;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Enable the configuration and restart Nginx:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/food-delivery-api /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+Finally, get your free SSL certificate:
+
+```bash
+sudo certbot --nginx -d api.codewithuzair.cloud
+```
 
 ---
 
