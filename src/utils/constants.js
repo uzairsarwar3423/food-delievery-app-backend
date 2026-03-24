@@ -124,7 +124,7 @@ const UPLOAD = Object.freeze({
 const PASSWORD = Object.freeze({
   SALT_ROUNDS: 10,
   MIN_LENGTH: 8,
-  REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&._\-])[A-Za-z\d@$!%*#?&._\-]{8,}$/,
 });
 
 // ─── Email Templates ──────────────────────────────────────────
