@@ -33,12 +33,14 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:latest
           provenance: false
 
-      - name: Debug Secrets
-        run: |
-          echo "Checking if secrets are available..."
-          if [ -z "${{ secrets.VPS_HOST }}" ]; then echo "❌ VPS_HOST is MISSING"; else echo "✅ VPS_HOST is present"; fi
-          if [ -z "${{ secrets.VPS_USER }}" ]; then echo "❌ VPS_USER is MISSING"; else echo "✅ VPS_USER is present"; fi
-          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then echo "❌ VPS_SSH_KEY is MISSING"; else echo "✅ VPS_SSH_KEY is present"; fi
+      - name: Copy docker-compose.prod.yml to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/food-delivery-backend"
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
