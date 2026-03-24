@@ -1,0 +1,127 @@
+paths:
+  /api/v1/restaurants/{restaurantId}/menu:
+    get:
+      tags:
+        - Menu
+      summary: Get restaurant menu
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuItem'
+    post:
+      tags:
+        - Menu
+      summary: Create menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                categoryId:
+                  type: string
+                  format: uuid
+                image:
+                  type: string
+                  format: binary
+      responses:
+        201:
+          description: Created
+
+  /api/v1/menu/{id}:
+    get:
+      tags:
+        - Menu
+      summary: Get menu item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuItem'
+    put:
+      tags:
+        - Menu
+      summary: Update menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+    delete:
+      tags:
+        - Menu
+      summary: Delete menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: No Content
+
+  /api/v1/menu/bulk-availability:
+    put:
+      tags:
+        - Menu
+      summary: Bulk update availability
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                itemIds:
+                  type: array
+                  items:
+                    type: string
+                isAvailable:
+                  type: boolean
+      responses:
+        200:
+          description: OK

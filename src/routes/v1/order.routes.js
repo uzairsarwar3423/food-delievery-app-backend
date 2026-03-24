@@ -72,14 +72,7 @@ router.put('/:id/status',
     orderController.updateStatus
 );
 
-/**
- * POST /api/v1/orders/:id/review
- * Add review
- */
-router.post('/:id/review',
-    validate(orderValidator.reviewOrder),
-    orderController.addReview
-);
+
 
 /**
  * POST /api/v1/orders/:id/reorder

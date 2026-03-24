@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: food-delivery-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - DATABASE_URL=postgresql://fooduser:foodpass@db:5432/food_delivery?schema=public
+      - DIRECT_URL=postgresql://fooduser:foodpass@db:5432/food_delivery?schema=public
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=fooduser
+      # Add other necessary env vars or use a .env file
+      - JWT_SECRET=your_jwt_secret_must_be_long_and_secure
+      - JWT_REFRESH_SECRET=your_jwt_refresh_secret_must_be_long_and_secure
+      - APP_NAME="Food Delivery API"
+      - APP_VERSION="1.0.0"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food-delivery-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: food-delivery-db
+    environment:
+      - POSTGRES_USER=fooduser
+      - POSTGRES_PASSWORD=foodpass
+      - POSTGRES_DB=food_delivery
+    ports:
+      - "5433:5432" # Host port 5433 to avoid conflict with local postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fooduser -d food_delivery" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - food-delivery-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: food-delivery-redis
+    ports:
+      - "6380:6379" # Host port 6380 to avoid conflict with local redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - food-delivery-network
+
+networks:
+  food-delivery-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

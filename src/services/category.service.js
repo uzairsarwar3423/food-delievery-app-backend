@@ -6,6 +6,7 @@
 const categoryRepository = require('../repositories/category.repository');
 const cacheService = require('./cache.service');
 const uploadService = require('./upload.service');
+const imageService = require('./image.service');
 const ApiError = require('../utils/ApiError');
 const { slugify } = require('../utils/helpers');
 
@@ -14,7 +15,21 @@ class CategoryService {
      * Get all active categories
      */
   async getCategories() {
-    return categoryRepository.findMany();
+    const cacheKey = 'categories:all';
+    const cached = await cacheService.get(cacheKey);
+    let categories = cached;
+
+    if (!categories) {
+      categories = await categoryRepository.findMany();
+      // Cache for 1 hour
+      await cacheService.set(cacheKey, categories, 3600);
+    }
+
+    // Optimize images
+    return categories.map((cat) => ({
+      ...cat,
+      imageUrl: imageService.getOptimizedUrl(cat.imageUrl, { width: 100, height: 100 }),
+    }));
   }
 
   /**
@@ -71,7 +86,7 @@ class CategoryService {
     }
 
     const data = { ...updateData };
-    if (data.displayOrder) {data.displayOrder = parseInt(data.displayOrder, 10);}
+    if (data.displayOrder) { data.displayOrder = parseInt(data.displayOrder, 10); }
 
     if (file) {
       const result = await uploadService.uploadImage(file.path, 'categories');

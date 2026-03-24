@@ -140,12 +140,20 @@ npm run dev
 | Day | Focus | Status |
 |---|---|---|
 | Day 1 | Project Foundation & Database Schema | ✅ |
-| Day 2 | Authentication & User Management | 🔜 |
-| Day 3 | Restaurant & Menu Management | 🔜 |
-| Day 4 | Orders & Cart System | 🔜 |
-| Day 5 | Payments & Delivery | 🔜 |
-| Day 6 | Reviews, Coupons & Notifications | 🔜 |
-| Day 7 | Admin Panel & Analytics | 🔜 |
+| Day 2 | Authentication & User Management | ✅ |
+| Day 3 | Restaurant & Menu Management | ✅ |
+| Day 4 | Orders & Cart System | ✅ |
+| Day 5 | Payments & Delivery | ✅ |
+| Day 6 | Reviews, Coupons & Notifications | ✅ |
+| Day 7 | Admin Panel & Analytics | ✅ |
+
+---
+
+## 📖 Documentation
+
+- [API Reference (Swagger)](http://localhost:5000/api-docs)
+- [Deployment Guide](docs/deployment.md)
+- [Environment Setup Guide](docs/setup_guide.md)
 
 ---
 

@@ -185,3 +185,359 @@ components:
         isActive:
           type: boolean
 
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        price:
+          type: number
+        discountedPrice:
+          type: number
+        isAvailable:
+          type: boolean
+        isVegetarian:
+          type: boolean
+        isVegan:
+          type: boolean
+        spiceLevel:
+          type: integer
+        averageRating:
+          type: number
+        totalOrders:
+          type: integer
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        menuItemId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        specialNote:
+          type: string
+        menuItem:
+          $ref: '#/components/schemas/MenuItem'
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        customerId:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, PREPARING, READY_FOR_PICKUP, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, REFUNDED]
+        subtotal:
+          type: number
+        deliveryFee:
+          type: number
+        taxAmount:
+          type: number
+        totalAmount:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        menuItemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        itemPrice:
+          type: number
+        quantity:
+          type: integer
+        subtotal:
+          type: number
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          type: string
+          enum: [CASH, JAZZCASH, EASYPAISA, CREDIT_CARD, DEBIT_CARD, WALLET, UPI]
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED]
+
+    DeliveryRider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        vehicleType:
+          type: string
+        vehicleNumber:
+          type: string
+        status:
+          type: string
+          enum: [OFFLINE, ONLINE, ON_DELIVERY, SUSPENDED]
+        isAvailable:
+          type: boolean
+        averageRating:
+          type: number
+        totalDeliveries:
+          type: integer
+
+    PayoutRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        riderId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, REJECTED]
+        bankName:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+        processedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        hasNextPage:
+          type: boolean
+        hasPrevPage:
+          type: boolean
+
+    SearchHistory:
+      type: object
+      properties:
+        searchTerm:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    RestaurantSearchResponse:
+      type: object
+      properties:
+        restaurants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Restaurant'
+        totalResults:
+          type: integer
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    MenuItemSearchResponse:
+      type: object
+      properties:
+        menuItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+        totalResults:
+          type: integer
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        restaurantRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        foodRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        deliveryRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        restaurantReply:
+          type: string
+        repliedAt:
+          type: string
+          format: date-time
+        helpfulCount:
+          type: integer
+        isFlagged:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewHelpfulVote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reviewId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewFlag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reviewId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, resolved, dismissed]
+        createdAt:
+          type: string
+          format: date-time
+
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [PERCENTAGE, FIXED_AMOUNT, FREE_DELIVERY]
+        discountValue:
+          type: number
+        minimumOrderAmount:
+          type: number
+        maximumDiscountAmount:
+          type: number
+        usageLimit:
+          type: integer
+        usageLimitPerUser:
+          type: integer
+        totalUsed:
+          type: integer
+        isActive:
+          type: boolean
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+
+    CouponUsage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        couponId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        usedAt:
+          type: string
+          format: date-time
+

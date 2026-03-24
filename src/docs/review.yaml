@@ -1,0 +1,206 @@
+paths:
+  /api/v1/restaurants/{restaurantId}/reviews:
+    get:
+      summary: Get restaurant reviews
+      tags: [Reviews]
+      parameters:
+        - in: path
+          name: restaurantId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+
+    post:
+      summary: Create a review for a restaurant
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: restaurantId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - orderId
+                - restaurantRating
+                - foodRating
+              properties:
+                orderId:
+                  type: string
+                  format: uuid
+                restaurantRating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                foodRating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                deliveryRating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Review created successfully
+        '400':
+          description: Invalid input or already reviewed
+
+  /api/v1/reviews/{id}:
+    put:
+      summary: Update a review
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                restaurantRating:
+                  type: integer
+                foodRating:
+                  type: integer
+                deliveryRating:
+                  type: integer
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Review updated
+    
+    delete:
+      summary: Delete a review
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Review deleted
+
+  /api/v1/reviews/{id}/helpful:
+    post:
+      summary: Toggle helpful vote on a review
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vote toggled
+
+  /api/v1/reviews/{id}/reply:
+    post:
+      summary: Add a reply to a review (Restaurant Owner)
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reply
+              properties:
+                reply:
+                  type: string
+      responses:
+        '200':
+          description: Reply added
+
+  /api/v1/reviews/{id}/flag:
+    put:
+      summary: Flag/Report a review
+      tags: [Reviews]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Review flagged

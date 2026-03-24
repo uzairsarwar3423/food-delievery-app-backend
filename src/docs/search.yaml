@@ -1,0 +1,189 @@
+/search/restaurants:
+  get:
+    summary: Search for restaurants
+    tags: [Search]
+    parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search term (name, description, etc.)
+      - in: query
+        name: filters
+        schema:
+          type: string
+        description: JSON string of filters (category, minRating, cuisines, isOpen)
+      - in: query
+        name: sort
+        schema:
+          type: string
+          enum: [relevance, rating, newest, delivery_fee]
+        description: Sort criteria
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+    responses:
+      200:
+        description: Search results
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    restaurants:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Restaurant'
+                    totalResults:
+                      type: integer
+                    pagination:
+                      $ref: '#/components/schemas/Pagination'
+
+/search/menu-items:
+  get:
+    summary: Search for menu items
+    tags: [Search]
+    parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+      - in: query
+        name: restaurantId
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: filters
+        schema:
+          type: string
+    responses:
+      200:
+        description: Search results
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    menuItems:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/MenuItem'
+                    totalResults:
+                      type: integer
+
+/search/suggestions:
+  get:
+    summary: Get search suggestions
+    tags: [Search]
+    parameters:
+      - in: query
+        name: q
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Suggestions list
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    suggestions:
+                      type: array
+                      items:
+                        type: string
+
+/search/popular:
+  get:
+    summary: Get popular searches and trending restaurants
+    tags: [Search]
+    responses:
+      200:
+        description: Trending data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    popularSearches:
+                      type: array
+                      items:
+                        type: string
+                    trending:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Restaurant'
+
+/search/save:
+  post:
+    summary: Save search history
+    tags: [Search]
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - searchTerm
+            properties:
+              searchTerm:
+                type: string
+    responses:
+      201:
+        description: Saved successfully
+
+/search/history:
+  get:
+    summary: Get user search history
+    tags: [Search]
+    security:
+      - BearerAuth: []
+    responses:
+      200:
+        description: User history
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    searchHistory:
+                      type: array
+                      items:
+                        type: string

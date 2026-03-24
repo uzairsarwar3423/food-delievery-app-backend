@@ -80,6 +80,14 @@ const PAYMENT_STATUS = Object.freeze({
   PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
 });
 
+// ─── Payout Statuses ──────────────────────────────────────────
+const PAYOUT_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED',
+});
+
 // ─── Payment Methods ──────────────────────────────────────────
 const PAYMENT_METHOD = Object.freeze({
   CASH: 'CASH',
@@ -136,6 +144,7 @@ module.exports = {
   HTTP_STATUS,
   ORDER_STATUS,
   PAYMENT_STATUS,
+  PAYOUT_STATUS,
   PAYMENT_METHOD,
   PAGINATION,
   UPLOAD,

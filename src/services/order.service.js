@@ -10,7 +10,7 @@ const userRepository = require('../repositories/user.repository');
 const ApiError = require('../utils/ApiError');
 const { ORDER_STATUS, EMAIL_TEMPLATES, ROLES } = require('../utils/constants');
 const { addOrderJob } = require('../jobs/orderQueue');
-const { emitToRoom } = require('../websocket/socket');
+const orderEvents = require('../websocket/events/order.events');
 const logger = require('../config/logger');
 
 class OrderService {
@@ -87,8 +87,8 @@ class OrderService {
         await addOrderJob('SEND_CONFIRMATION_EMAIL', { orderId: order.id, customerEmail: user.email });
 
         // 9. Emit WebSocket events
-        emitToRoom(`restaurant:${restaurantId}`, 'new_order', order);
-        emitToRoom(`user:${userId}`, 'order_update', { id: order.id, status: order.status, number: order.orderNumber });
+        orderEvents.emitOrderNew(order);
+        orderEvents.emitOrderStatusChanged(order); // Also notify customer 
 
         logger.info(`✅ Order created successfully: ${order.orderNumber} for user ${userId}`);
 
@@ -208,11 +208,26 @@ class OrderService {
         // Notify customer & emit WebSocket
         await addOrderJob('NOTIFY_STATUS_CHANGE', { orderId: order.id, newStatus });
 
-        emitToRoom(`user:${order.customerId}`, 'order_status_updated', {
-            orderId: order.id,
-            status: newStatus,
-            updatedAt: new Date(),
-        });
+        // Trigger specific events based on status
+        switch (newStatus) {
+            case ORDER_STATUS.CONFIRMED:
+                orderEvents.emitOrderAccepted(updatedOrder);
+                break;
+            case ORDER_STATUS.READY_FOR_PICKUP:
+                orderEvents.emitOrderReady(updatedOrder);
+                break;
+            case ORDER_STATUS.OUT_FOR_DELIVERY:
+                orderEvents.emitOrderPickedUp(updatedOrder);
+                break;
+            case ORDER_STATUS.DELIVERED:
+                orderEvents.emitOrderDelivered(updatedOrder);
+                break;
+            case ORDER_STATUS.CANCELLED:
+                orderEvents.emitOrderCancelled(updatedOrder);
+                break;
+            default:
+                orderEvents.emitOrderStatusChanged(updatedOrder);
+        }
 
         return updatedOrder;
     }
@@ -267,47 +282,7 @@ class OrderService {
         return stats;
     }
 
-    /**
-   * Add a review to a delivered order
-   */
-    async addReview(orderId, userId, reviewPayload) {
-        const { rating, comment, foodRating, serviceRating, deliveryRating, images } = reviewPayload;
 
-        const order = await orderRepository.findById(orderId);
-        if (!order || order.customerId !== userId) {
-            throw new ApiError(404, 'Order not found');
-        }
-
-        if (order.status !== ORDER_STATUS.DELIVERED) {
-            throw new ApiError(400, 'You can only review delivered orders');
-        }
-
-        // Check if duplicate review
-        const hasExisting = await orderRepository.hasReview(orderId);
-        if (hasExisting) {
-            throw new ApiError(400, 'This order has already been reviewed');
-        }
-
-        const review = await orderRepository.createReview({
-            orderId,
-            customerId: userId,
-            restaurantId: order.restaurantId,
-            restaurantRating: rating,
-            foodRating: foodRating || rating,
-            deliveryRating,
-            comment,
-            images: images || [],
-        });
-
-        // In a production app, we would calculate new average rating for restaurant here
-        // or trigger an async job to do so.
-        await addOrderJob('RECALCULATE_RESTAURANT_RATING', { restaurantId: order.restaurantId });
-        if (order.deliveryPersonId) {
-            await addOrderJob('RECALCULATE_RIDER_RATING', { riderId: order.deliveryPersonId });
-        }
-
-        return review;
-    }
 
     /**
      * ── Private Helpers ──────────────────────────────────────────

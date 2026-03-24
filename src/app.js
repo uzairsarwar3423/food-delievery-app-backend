@@ -30,7 +30,7 @@ app.use(
 );
 
 // ─── CORS ─────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,http://localhost:8081').split(',');
 
 app.use(
   cors({

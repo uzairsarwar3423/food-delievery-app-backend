@@ -88,7 +88,7 @@ describe('Order System Integration Tests', () => {
                 .set('Authorization', `Bearer ${customerToken}`)
                 .send({
                     deliveryAddressId: addressId,
-                    paymentMethod: 'CASH_ON_DELIVERY'
+                    paymentMethod: 'CASH'
                 });
 
             expect(res.status).toBe(400);
@@ -107,7 +107,7 @@ describe('Order System Integration Tests', () => {
                 .set('Authorization', `Bearer ${customerToken}`)
                 .send({
                     deliveryAddressId: addressId,
-                    paymentMethod: 'CASH_ON_DELIVERY',
+                    paymentMethod: 'CASH',
                     specialInstructions: 'No onions please'
                 });
 
@@ -185,7 +185,7 @@ describe('Order System Integration Tests', () => {
             const res = await request(app)
                 .post('/api/v1/orders')
                 .set('Authorization', `Bearer ${customerToken}`)
-                .send({ deliveryAddressId: addressId, paymentMethod: 'CASH_ON_DELIVERY' });
+                .send({ deliveryAddressId: addressId, paymentMethod: 'CASH' });
 
             testOrderId = res.body.data.id;
         });
@@ -251,9 +251,10 @@ describe('Order System Integration Tests', () => {
     describe('Reviews, Stats & Reordering', () => {
         it('should post a review for the delivered order', async () => {
             const res = await request(app)
-                .post(`/api/v1/orders/${testOrderId}/review`)
+                .post(`/api/v1/restaurants/${restaurantId}/reviews`)
                 .set('Authorization', `Bearer ${customerToken}`)
                 .send({
+                    orderId: testOrderId,
                     rating: 5,
                     foodRating: 5,
                     serviceRating: 4,

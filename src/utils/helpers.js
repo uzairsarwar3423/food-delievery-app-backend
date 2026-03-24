@@ -13,8 +13,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return parseFloat((R * c).toFixed(2));
 };
@@ -65,9 +65,13 @@ const slugify = (text) =>
 /**
  * Paginate helper — returns skip/take for Prisma
  */
-const getPaginationParams = (page = 1, limit = 10) => {
-  const safePage = Math.max(1, parseInt(page, 10));
-  const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10)));
+const getPaginationParams = (page, limit) => {
+  let p = parseInt(page, 10);
+  let l = parseInt(limit, 10);
+
+  const safePage = isNaN(p) || p < 1 ? 1 : p;
+  const safeLimit = isNaN(l) || l < 1 ? 10 : (l > 100 ? 100 : l);
+
   return {
     skip: (safePage - 1) * safeLimit,
     take: safeLimit,
@@ -142,7 +146,7 @@ const isRestaurantOpen = (openingTime, closingTime, isOpen) => {
   if (closeMinutes < openMinutes) {
     closeMinutes += 24 * 60;
     const adjustedCurrent =
-            currentMinutes < openMinutes ? currentMinutes + 24 * 60 : currentMinutes;
+      currentMinutes < openMinutes ? currentMinutes + 24 * 60 : currentMinutes;
     return adjustedCurrent >= openMinutes && adjustedCurrent < closeMinutes;
   }
 

@@ -1,0 +1,201 @@
+paths:
+  /api/v1/rider/earnings/summary:
+    get:
+      tags: [Earnings]
+      summary: Get rider earnings summary
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      today: { type: number, example: 500 }
+                      week: { type: number, example: 3500 }
+                      month: { type: number, example: 15000 }
+                      pending: { type: number, example: 1200 }
+
+  /api/v1/rider/earnings/today:
+    get:
+      tags: [Earnings]
+      summary: Get today's earnings details
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      totalEarnings: { type: number, example: 500 }
+                      deliveries: { type: number, example: 5 }
+                      tips: { type: number, example: 50 }
+                      bonuses: { type: number, example: 0 }
+                      orders: { type: array, items: { $ref: '#/components/schemas/Order' } }
+
+  /api/v1/rider/earnings/trips:
+    get:
+      tags: [Earnings]
+      summary: Get trip history with earnings
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: dateFrom
+          schema: { type: string, format: date }
+        - in: query
+          name: dateTo
+          schema: { type: string, format: date }
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      trips: { type: array, items: { type: object } }
+                      totalEarnings: { type: number }
+                      pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /api/v1/rider/earnings/breakdown:
+    get:
+      tags: [Earnings]
+      summary: Get earnings breakdown (chart data)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [week, month, year], default: week }
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string }
+                        total: { type: number }
+                        tips: { type: number }
+                        bonuses: { type: number }
+                        count: { type: number }
+
+  /api/v1/rider/payouts/pending:
+    get:
+      tags: [Payouts]
+      summary: Get pending payout details
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      pendingAmount: { type: number, example: 1200 }
+                      breakdown:
+                        type: object
+                        properties:
+                          deliveryFees: { type: number }
+                          tips: { type: number }
+                          bonuses: { type: number }
+
+  /api/v1/rider/payouts/request:
+    post:
+      tags: [Payouts]
+      summary: Request a payout
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: number, minimum: 1000 }
+      responses:
+        201:
+          description: Created
+        400:
+          description: Bad Request (Minimum amount or missing bank details)
+
+  /api/v1/rider/payouts/history:
+    get:
+      tags: [Payouts]
+      summary: Get payout request history
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      payouts: { type: array, items: { $ref: '#/components/schemas/PayoutRequest' } }
+                      pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /api/v1/rider/payouts/{id}:
+    get:
+      tags: [Payouts]
+      summary: Get payout details
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data: { $ref: '#/components/schemas/PayoutRequest' }

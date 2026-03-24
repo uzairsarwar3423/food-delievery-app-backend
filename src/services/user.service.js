@@ -4,6 +4,7 @@
 
 const userRepository = require('../repositories/user.repository');
 const uploadService = require('./upload.service');
+const imageService = require('./image.service');
 const { cacheDel } = require('../config/redis');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger');
@@ -20,8 +21,11 @@ class UserService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Exclude password hash
+    // Exclude password hash and optimize avatar
     const { passwordHash, ...profile } = user;
+    if (profile.avatarUrl) {
+      profile.avatarUrl = imageService.getOptimizedUrl(profile.avatarUrl, { width: 150, height: 150 });
+    }
     return profile;
   }
 
@@ -171,7 +175,7 @@ class UserService {
 
     const { fullAddress, ...rest } = updateData;
     const finalUpdateData = { ...rest };
-    if (fullAddress) {finalUpdateData.addressLine1 = fullAddress;}
+    if (fullAddress) { finalUpdateData.addressLine1 = fullAddress; }
 
     // Handle default address logic
     if (finalUpdateData.isDefault && !address.isDefault) {

@@ -7,6 +7,7 @@ const menuRepository = require('../repositories/menu.repository');
 const restaurantRepository = require('../repositories/restaurant.repository');
 const cacheService = require('./cache.service');
 const uploadService = require('./upload.service');
+const imageService = require('./image.service');
 const ApiError = require('../utils/ApiError');
 const { slugify } = require('../utils/helpers');
 const { parse } = require('csv-parse/sync');
@@ -36,13 +37,18 @@ class MenuService {
             search,
         });
 
-        // Group by category
+        // Group by category and optimize images
         const groupedMenu = items.reduce((acc, item) => {
             const categoryName = item.category ? item.category.name : 'Uncategorized';
             if (!acc[categoryName]) {
                 acc[categoryName] = [];
             }
-            acc[categoryName].push(item);
+            // Optimize image URL
+            const optimizedItem = {
+                ...item,
+                imageUrl: imageService.getOptimizedUrl(item.imageUrl, { width: 300, height: 300 }),
+            };
+            acc[categoryName].push(optimizedItem);
             return acc;
         }, {});
 
@@ -60,6 +66,8 @@ class MenuService {
         if (!item) {
             throw new ApiError(404, 'Menu item not found');
         }
+        // Optimize image URL
+        item.imageUrl = imageService.getOptimizedUrl(item.imageUrl, { width: 600, height: 600 });
         return item;
     }
 

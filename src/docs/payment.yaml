@@ -1,0 +1,86 @@
+paths:
+  /api/v1/payments/history:
+    get:
+      tags:
+        - Payments
+      summary: Get payment history
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+
+  /api/v1/payments/create:
+    post:
+      tags:
+        - Payments
+      summary: Create a payment
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                  format: uuid
+                method:
+                  type: string
+                  enum: [CASH, JAZZCASH, EASYPAISA, CREDIT_CARD, DEBIT_CARD, WALLET, UPI]
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /api/v1/payments/{id}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /api/v1/payments/order/{orderId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by order ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'

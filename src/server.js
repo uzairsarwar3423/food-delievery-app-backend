@@ -21,7 +21,7 @@ const server = http.createServer(app);
 // ─── Socket.io ───────────────────────────────────────────────
 const io = new SocketServer(server, {
   cors: {
-    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,http://localhost:8081').split(','),
     credentials: true,
   },
   pingTimeout: 60000,
@@ -58,7 +58,7 @@ const startServer = async () => {
 
 // ─── Graceful Shutdown ────────────────────────────────────────
 const gracefulShutdown = async (signal) => {
-  logger.info(`\n${signal} received. Shutting down gracefully...`);
+  logger.info(`\\n${signal} received. Shutting down gracefully...`);
 
   server.close(async () => {
     logger.info('HTTP server closed');

@@ -16,19 +16,31 @@ class RestaurantRepository {
     orderBy = { createdAt: 'desc' },
     include = {},
   }) {
-    const [restaurants, total] = await Promise.all([
-      prisma.restaurant.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: {
-          _count: {
-            select: { reviews: true },
-          },
-          ...include,
+    // If select is provided in include (legacy or convenience), extract it
+    const select = include.select;
+    const finalInclude = { ...include };
+    delete finalInclude.select;
+
+    const queryOptions = {
+      where,
+      skip,
+      take,
+      orderBy,
+    };
+
+    if (select) {
+      queryOptions.select = select;
+    } else {
+      queryOptions.include = {
+        _count: {
+          select: { reviews: true },
         },
-      }),
+        ...finalInclude,
+      };
+    }
+
+    const [restaurants, total] = await Promise.all([
+      prisma.restaurant.findMany(queryOptions),
       prisma.restaurant.count({ where }),
     ]);
 
@@ -133,6 +145,25 @@ class RestaurantRepository {
       },
     });
     return !!activeOrder;
+  }
+
+  /**
+   * Find by status
+   */
+  async findManyByStatus(status) {
+    return prisma.restaurant.findMany({
+      where: { status },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 }
 

@@ -7,9 +7,31 @@ const restaurantRepository = require('../repositories/restaurant.repository');
 const cacheService = require('./cache.service');
 const locationService = require('./location.service');
 const uploadService = require('./upload.service');
+const imageService = require('./image.service');
 const ApiError = require('../utils/ApiError');
 const { slugify, getPaginationParams, buildPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const { prisma } = require('../config/database');
+
+const RESTAURANT_LISTING_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  logoUrl: true,
+  status: true,
+  isOpen: true,
+  isFeatured: true,
+  averageRating: true,
+  totalReviews: true,
+  cuisineTypes: true,
+  estimatedDeliveryMin: true,
+  estimatedDeliveryMax: true,
+  deliveryFee: true,
+  minimumOrderAmount: true,
+  latitude: true,
+  longitude: true,
+  createdAt: true,
+};
 
 class RestaurantService {
   /**
@@ -39,6 +61,11 @@ class RestaurantService {
     const where = {
       status: status || 'APPROVED',
     };
+
+    // Try cache first
+    const cacheKey = cacheService.generateRestaurantKey(query);
+    const cached = await cacheService.get(cacheKey);
+    if (cached) { return cached; }
 
     if (ownerId) {
       where.ownerId = ownerId;
@@ -73,9 +100,9 @@ class RestaurantService {
 
     // Sorting
     let orderBy = { createdAt: 'desc' };
-    if (sortBy === 'rating') {orderBy = { averageRating: 'desc' };}
-    if (sortBy === 'popularity') {orderBy = { totalOrders: 'desc' };}
-    if (sortBy === 'deliveryTime') {orderBy = { estimatedDeliveryMin: 'asc' };}
+    if (sortBy === 'rating') { orderBy = { averageRating: 'desc' }; }
+    if (sortBy === 'popularity') { orderBy = { totalOrders: 'desc' }; }
+    if (sortBy === 'deliveryTime') { orderBy = { estimatedDeliveryMin: 'asc' }; }
 
     // Fetch from Repository
     const { restaurants, total } = await restaurantRepository.findMany({
@@ -84,9 +111,7 @@ class RestaurantService {
       where,
       orderBy,
       include: {
-        owner: {
-          select: { firstName: true, lastName: true },
-        },
+        select: RESTAURANT_LISTING_SELECT,
       },
     });
 
@@ -115,30 +140,62 @@ class RestaurantService {
       }
     }
 
-    const pagination = buildPaginationMeta(total, currentPage, currentLimit);
+    // Optimize images
+    results = results.map((r) => ({
+      ...r,
+      logoUrl: imageService.getOptimizedUrl(r.logoUrl, { width: 100, height: 100 }),
+      coverImageUrl: imageService.getOptimizedUrl(r.coverImageUrl, { width: 800, height: 400 }),
+    }));
 
-    return { restaurants: results, pagination };
+    const pagination = buildPaginationMeta(total, currentPage, currentLimit);
+    const responseData = { restaurants: results, pagination };
+
+    // Cache for 10 minutes
+    await cacheService.set(cacheKey, responseData, 600);
+
+    return responseData;
   }
 
   /**
      * Get restaurant by ID
      */
   async getRestaurantById(id, userLocation = null) {
-    const restaurant = await restaurantRepository.findById(id, {
-      menuItems: {
-        where: { isAvailable: true },
-        include: { category: true },
-      },
-      reviews: {
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { customer: { select: { firstName: true, avatarUrl: true } } },
-      },
-    });
+    // Cache per restaurant ID
+    const cacheKey = `restaurant:details:${id}`;
+    const cached = await cacheService.get(cacheKey);
+    let restaurant = cached;
 
     if (!restaurant) {
-      throw new ApiError(404, 'Restaurant not found');
+      restaurant = await restaurantRepository.findById(id, {
+        menuItems: {
+          where: { isAvailable: true },
+          include: { category: true },
+        },
+        reviews: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          include: { customer: { select: { firstName: true, avatarUrl: true } } },
+        },
+      });
+
+      if (!restaurant) {
+        throw new ApiError(404, 'Restaurant not found');
+      }
+
+      // Cache for 15 minutes
+      await cacheService.set(cacheKey, restaurant, 900);
     }
+
+    // Optimize images
+    const optimizedRestaurant = {
+      ...restaurant,
+      logoUrl: imageService.getOptimizedUrl(restaurant.logoUrl, { width: 200, height: 200 }),
+      coverImageUrl: imageService.getOptimizedUrl(restaurant.coverImageUrl, { width: 1200, height: 600 }),
+      menuItems: restaurant.menuItems?.map((item) => ({
+        ...item,
+        imageUrl: imageService.getOptimizedUrl(item.imageUrl, { width: 300, height: 300 }),
+      })),
+    };
 
     let distance = null;
     if (userLocation && userLocation.latitude && userLocation.longitude) {
@@ -150,7 +207,7 @@ class RestaurantService {
       );
     }
 
-    return { ...restaurant, distance };
+    return { ...optimizedRestaurant, distance };
   }
 
   /**
@@ -191,6 +248,10 @@ class RestaurantService {
      * Get featured restaurants
      */
   async getFeaturedRestaurants() {
+    const cacheKey = 'restaurants:featured';
+    const cached = await cacheService.get(cacheKey);
+    if (cached) { return cached; }
+
     const { restaurants } = await restaurantRepository.findMany({
       where: {
         isFeatured: true,
@@ -198,8 +259,22 @@ class RestaurantService {
       },
       orderBy: { averageRating: 'desc' },
       take: 10,
+      include: {
+        select: RESTAURANT_LISTING_SELECT,
+      },
     });
-    return restaurants;
+
+    // Cache for 30 minutes
+    await cacheService.set(cacheKey, restaurants, 1800);
+
+    // Optimize images
+    const optimized = restaurants.map((r) => ({
+      ...r,
+      logoUrl: imageService.getOptimizedUrl(r.logoUrl, { width: 150, height: 150 }),
+      coverImageUrl: imageService.getOptimizedUrl(r.coverImageUrl, { width: 600, height: 300 }),
+    }));
+
+    return optimized;
   }
 
   /**
@@ -274,11 +349,11 @@ class RestaurantService {
     const data = { ...updateData };
 
     // Type conversions if present
-    if (data.latitude) {data.latitude = parseFloat(data.latitude);}
-    if (data.longitude) {data.longitude = parseFloat(data.longitude);}
-    if (data.deliveryRadius) {data.deliveryRadius = parseFloat(data.deliveryRadius);}
-    if (data.minimumOrderAmount) {data.minimumOrderAmount = parseFloat(data.minimumOrderAmount);}
-    if (data.deliveryFee) {data.deliveryFee = parseFloat(data.deliveryFee);}
+    if (data.latitude) { data.latitude = parseFloat(data.latitude); }
+    if (data.longitude) { data.longitude = parseFloat(data.longitude); }
+    if (data.deliveryRadius) { data.deliveryRadius = parseFloat(data.deliveryRadius); }
+    if (data.minimumOrderAmount) { data.minimumOrderAmount = parseFloat(data.minimumOrderAmount); }
+    if (data.deliveryFee) { data.deliveryFee = parseFloat(data.deliveryFee); }
 
     const updated = await restaurantRepository.update(id, data);
 

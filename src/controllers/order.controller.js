@@ -92,15 +92,7 @@ const updateStatus = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, order, `Order status updated to ${status}`);
 });
 
-/**
- * @desc    Post a review for a delivered order
- * @route   POST /api/v1/orders/:id/review
- * @access  Private (Customer)
- */
-const addReview = asyncHandler(async (req, res) => {
-    const review = await orderService.addReview(req.params.id, req.user.id, req.body);
-    return ApiResponse.created(res, review, 'Review posted successfully');
-});
+
 
 /**
  * @desc    Re-order an old order
@@ -130,7 +122,6 @@ module.exports = {
     trackOrder,
     getActiveOrders,
     updateStatus,
-    addReview,
     reorder,
     getStats,
 };

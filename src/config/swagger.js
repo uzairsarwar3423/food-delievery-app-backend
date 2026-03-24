@@ -30,7 +30,24 @@ const options = {
       },
     ],
   },
-  apis: ['./src/docs/*.yaml', './src/routes/**/*.js'],
+  // Documentation files to parse
+  apis: [
+    './src/docs/health.yaml',
+    './src/docs/auth.yaml',
+    './src/docs/user.yaml',
+    './src/docs/restaurant.yaml',
+    './src/docs/menu.yaml',
+    './src/docs/order.yaml',
+    './src/docs/cart.yaml',
+    './src/docs/payment.yaml',
+    './src/docs/category.yaml',
+    './src/docs/rider.yaml',
+    './src/docs/review.yaml',
+    './src/docs/admin.yaml',
+    './src/docs/search.yaml',
+    './src/docs/earnings_payout.yaml',
+    './src/docs/schemas.yaml'
+  ],
 };
 
 const swaggerSpec = swaggerJSDoc(options);

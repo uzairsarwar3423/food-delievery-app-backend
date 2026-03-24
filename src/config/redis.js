@@ -8,11 +8,7 @@ const logger = require('./logger');
 let redisClient = null;
 
 const createRedisClient = () => {
-  const client = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT, 10) || 6379,
-    password: process.env.REDIS_PASSWORD || undefined,
-    db: parseInt(process.env.REDIS_DB, 10) || 0,
+  const redisOptions = {
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
       logger.warn(`Redis connection attempt ${times}, retrying in ${delay}ms`);
@@ -21,7 +17,17 @@ const createRedisClient = () => {
     maxRetriesPerRequest: 3,
     enableReadyCheck: true,
     lazyConnect: false,
-  });
+  };
+
+  const client = process.env.REDIS_URL
+    ? new Redis(process.env.REDIS_URL, redisOptions)
+    : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      db: parseInt(process.env.REDIS_DB, 10) || 0,
+      ...redisOptions,
+    });
 
   client.on('connect', () => logger.info('Redis client connected'));
   client.on('ready', () => logger.info('Redis client ready'));
