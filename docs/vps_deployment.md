@@ -1,6 +1,6 @@
 # 🚀 VPS Deployment & CI/CD Guide (Beginner Friendly)
 
-This guide will help you deploy your backend to a VPS (like DigitalOcean, AWS EC2, or Linode) and set up an automatic pipeline so that every time you push to GitHub, your server updates automatically.
+This guide will help you deploy your backend to a VPS (like DigitalOcean, AWS EC2, or Linode) and set up an automatic pipeline so that every time you push to GitHub, your server updates automatically. and and
 
 ## 1. Prepare your VPS
 
