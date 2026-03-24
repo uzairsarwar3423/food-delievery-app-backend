@@ -53,7 +53,7 @@ const searchRestaurants = [
   query('latitude').optional().isFloat({ min: -90, max: 90 }).toFloat(),
   query('longitude').optional().isFloat({ min: -180, max: 180 }).toFloat(),
   query('radius').optional().isFloat({ min: 0.1 }).toFloat(),
-  query('sortBy').optional().isIn(['rating', 'distance', 'deliveryTime', 'popularity']),
+  query('sortBy').optional().isIn(['rating', 'distance', 'deliveryTime', 'popularity', 'relevance']),
   query('isOpen').optional().toBoolean(),
 ];
 

@@ -103,6 +103,9 @@ class RestaurantService {
     if (sortBy === 'rating') { orderBy = { averageRating: 'desc' }; }
     if (sortBy === 'popularity') { orderBy = { totalOrders: 'desc' }; }
     if (sortBy === 'deliveryTime') { orderBy = { estimatedDeliveryMin: 'asc' }; }
+    if (sortBy === 'relevance' && search) {
+      orderBy = { _relevance: { fields: ['name', 'description'], search, sort: 'desc' } };
+    }
 
     // Fetch from Repository
     const { restaurants, total } = await restaurantRepository.findMany({
