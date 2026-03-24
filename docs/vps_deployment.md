@@ -111,7 +111,7 @@ Finally, get your free SSL certificate:
 sudo certbot --nginx -d api.codewithuzair.cloud
 ```
 
----
+----
 
 ### Need help?
 If you get stuck on any step, just ask! I can guide you through the Nginx configuration or SSH key generation.
