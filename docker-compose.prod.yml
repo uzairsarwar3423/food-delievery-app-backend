@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/uzairsarwar3423/food-delivery-backend:latest
+    image: ghcr.io/uzairsarwar3423/food-delievery-app-backend:latest
     container_name: food-delivery-backend
     restart: always
     ports:
