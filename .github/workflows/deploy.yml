@@ -33,13 +33,13 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:latest
           provenance: false
 
-      - name: Copy docker-compose.prod.yml to VPS
+      - name: Copy docker-compose files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.yml,docker-compose.prod.yml"
           target: "~/food-delivery-backend"
 
       - name: Deploy

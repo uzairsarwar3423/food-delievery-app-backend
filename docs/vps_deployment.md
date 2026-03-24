@@ -113,5 +113,27 @@ sudo certbot --nginx -d api.codewithuzair.cloud
 
 ----
 
+## 7. Managing the Production Environment
+
+Since the VPS uses a dedicated production configuration, you must always specify the file if you are using standard `docker-compose` commands:
+
+```bash
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# Restart the service
+docker-compose -f docker-compose.prod.yml restart backend
+
+# Stop the application
+docker-compose -f docker-compose.prod.yml down
+
+# Start the application manually
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Note:** If you run `docker-compose` without `-f docker-compose.prod.yml`, it will look for `docker-compose.yml`, which is now also synced to the server but contains development-specific settings (like a local database). Always prefer the `.prod.yml` file for production tasks.
+
+----
+
 ### Need help?
 If you get stuck on any step, just ask! I can guide you through the Nginx configuration or SSH key generation.
