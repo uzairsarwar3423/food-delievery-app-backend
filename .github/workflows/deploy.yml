@@ -2,14 +2,12 @@ name: Deploy to VPS
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +27,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository_owner }}/food-delivery-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -39,10 +37,10 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GITHUB_REPOSITORY
           script: |
              cd ~/food-delivery-backend
-             export GITHUB_REPOSITORY=${{ github.repository }}
+             export IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/food-delivery-backend:latest
+             sed -i "s|image:.*|image: $IMAGE_NAME|g" docker-compose.prod.yml
              docker-compose -f docker-compose.prod.yml pull backend
              docker-compose -f docker-compose.prod.yml up -d backend
              docker image prune -f
