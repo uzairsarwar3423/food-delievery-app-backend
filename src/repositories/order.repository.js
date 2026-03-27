@@ -118,7 +118,36 @@ class OrderRepository {
      */
     async findByUserId(userId, { page = 1, limit = 10, status, dateFrom, dateTo } = {}) {
         const where = { customerId: userId };
-        if (status) { where.status = status; }
+
+        if (status) {
+            // Mapping for common frontend/API status names to Prisma enum values
+            const statusMap = {
+                'pending': 'PENDING',
+                'confirmed': 'CONFIRMED',
+                'preparing': 'PREPARING',
+                'ready': 'READY_FOR_PICKUP',
+                'picked_up': 'OUT_FOR_DELIVERY',
+                'delivering': 'OUT_FOR_DELIVERY',
+                'delivered': 'DELIVERED',
+                'cancelled': 'CANCELLED',
+                'refunded': 'REFUNDED'
+            };
+
+            // Handle comma-separated string or array
+            const statusList = typeof status === 'string' ? status.split(',') : (Array.isArray(status) ? status : [status]);
+
+            // Normalize and map statuses, removing duplicates
+            const mappedStatuses = [...new Set(statusList.map(s => {
+                const normalized = s.toString().toLowerCase().trim();
+                return statusMap[normalized] || normalized.toUpperCase();
+            }))];
+
+            if (mappedStatuses.length === 1) {
+                where.status = mappedStatuses[0];
+            } else if (mappedStatuses.length > 1) {
+                where.status = { in: mappedStatuses };
+            }
+        }
         if (dateFrom || dateTo) {
             where.createdAt = {};
             if (dateFrom) { where.createdAt.gte = new Date(dateFrom); }
