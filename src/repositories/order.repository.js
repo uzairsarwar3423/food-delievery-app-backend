@@ -85,6 +85,8 @@ class OrderRepository {
             select: {
                 id: true,
                 orderNumber: true,
+                customerId: true,
+                deliveryPersonId: true,
                 status: true,
                 totalAmount: true,
                 subtotal: true,
@@ -108,6 +110,7 @@ class OrderRepository {
                 restaurant: {
                     select: {
                         id: true,
+                        ownerId: true,
                         name: true,
                         phone: true,
                         addressLine1: true,
