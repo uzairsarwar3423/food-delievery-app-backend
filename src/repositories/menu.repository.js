@@ -9,15 +9,11 @@ class MenuRepository {
   /**
      * Find menu items for a restaurant with filters
      */
-  async findByRestaurant(restaurantId, { categoryId, isAvailable, search } = {}) {
-    const where = { restaurantId };
+  async findByRestaurant(restaurantId, { categoryId, isAvailable, search, skip, take = 50 } = {}) {
+    const where = { restaurantId, isAvailable: isAvailable !== undefined ? (isAvailable === 'true' || isAvailable === true) : true };
 
     if (categoryId) {
       where.categoryId = categoryId;
-    }
-
-    if (isAvailable !== undefined) {
-      where.isAvailable = isAvailable === 'true' || isAvailable === true;
     }
 
     if (search) {
@@ -30,9 +26,28 @@ class MenuRepository {
 
     return prisma.menuItem.findMany({
       where,
-      include: {
-        category: true,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        discountedPrice: true,
+        isAvailable: true,
+        isVegetarian: true,
+        spiceLevel: true,
+        sortOrder: true,
+        averageRating: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
+      skip,
+      take,
       orderBy: { sortOrder: 'asc' },
     });
   }
@@ -132,7 +147,7 @@ class MenuRepository {
       where: { menuItemId: id },
     });
 
-    if (cartItemCount > 0) {return true;}
+    if (cartItemCount > 0) { return true; }
 
     const activeOrderCount = await prisma.order.count({
       where: {

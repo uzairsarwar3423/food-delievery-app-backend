@@ -12,10 +12,29 @@ class CartRepository {
     async findByUserId(userId) {
         return prisma.cartItem.findMany({
             where: { userId },
-            include: {
+            select: {
+                id: true,
+                quantity: true,
+                customizations: true,
+                specialNote: true,
+                priceAtAddition: true,
                 menuItem: {
-                    include: {
-                        restaurant: true,
+                    select: {
+                        id: true,
+                        name: true,
+                        price: true,
+                        discountedPrice: true,
+                        imageUrl: true,
+                        isAvailable: true,
+                        restaurant: {
+                            select: {
+                                id: true,
+                                name: true,
+                                isOpen: true,
+                                deliveryFee: true,
+                                status: true,
+                            },
+                        },
                     },
                 },
             },

@@ -7,44 +7,62 @@ const { prisma } = require('../config/database');
 
 class RestaurantRepository {
   /**
-     * Find all restaurants with filters
-     */
+   * Find all restaurants with filters (Optimized with select and optional pagination)
+   */
   async findMany({
-    skip = 0,
+    skip,
     take = 20,
+    cursor,
     where = {},
-    orderBy = { createdAt: 'desc' },
-    include = {},
+    orderBy = [{ isOpen: 'desc' }, { isFeatured: 'desc' }, { averageRating: 'desc' }],
+    select,
   }) {
-    // If select is provided in include (legacy or convenience), extract it
-    const select = include.select;
-    const finalInclude = { ...include };
-    delete finalInclude.select;
-
     const queryOptions = {
-      where,
-      skip,
-      take,
+      where: { ...where },
+      take: take + 1, // Fetch one extra to check for next page
       orderBy,
     };
 
     if (select) {
       queryOptions.select = select;
     } else {
-      queryOptions.include = {
+      // Default optimized select for listing
+      queryOptions.select = {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        coverImageUrl: true,
+        averageRating: true,
+        totalReviews: true,
+        isOpen: true,
+        estimatedDeliveryMin: true,
+        estimatedDeliveryMax: true,
+        cuisineTypes: true,
+        deliveryFee: true,
+        minimumOrderAmount: true,
         _count: {
           select: { reviews: true },
         },
-        ...finalInclude,
       };
     }
 
-    const [restaurants, total] = await Promise.all([
-      prisma.restaurant.findMany(queryOptions),
-      prisma.restaurant.count({ where }),
-    ]);
+    if (cursor) {
+      queryOptions.cursor = { id: cursor };
+      queryOptions.skip = 1; // Skip the cursor element itself
+    } else if (skip !== undefined) {
+      queryOptions.skip = skip;
+    }
 
-    return { restaurants, total };
+    const restaurants = await prisma.restaurant.findMany(queryOptions);
+
+    let nextCursor = null;
+    if (restaurants.length > take) {
+      const nextItem = restaurants.pop();
+      nextCursor = nextItem.id;
+    }
+
+    return { restaurants, nextCursor };
   }
 
   /**

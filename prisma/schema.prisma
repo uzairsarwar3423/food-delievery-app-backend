@@ -133,8 +133,7 @@ model Restaurant {
   reviews              Review[]
 
   @@index([ownerId])
-  @@index([status, isFeatured])
-  @@index([status, averageRating(sort: Desc)])
+  @@index([status, isOpen, isFeatured, averageRating(sort: Desc)])
   @@index([latitude, longitude])
   @@index([isOpen])
   @@map("restaurants")
@@ -172,7 +171,7 @@ model MenuItem {
   orderItems      OrderItem[]
 
   @@unique([restaurantId, slug])
-  @@index([restaurantId, categoryId])
+  @@index([restaurantId, categoryId, isAvailable, sortOrder])
   @@index([isAvailable])
   @@index([price])
   @@index([slug])
@@ -240,9 +239,8 @@ model Order {
   review                Review?
   deliveryIssues        DeliveryIssue[]
 
-  @@index([customerId, createdAt(sort: Desc)])
+  @@index([customerId, status, createdAt(sort: Desc)])
   @@index([restaurantId, createdAt(sort: Desc)])
-  @@index([customerId, status])
   @@index([deliveryPersonId])
   @@index([orderNumber])
   @@map("orders")

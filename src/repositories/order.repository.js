@@ -82,9 +82,39 @@ class OrderRepository {
     async findById(id) {
         return prisma.order.findUnique({
             where: { id },
-            include: {
-                orderItems: true,
-                restaurant: true,
+            select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                totalAmount: true,
+                subtotal: true,
+                deliveryFee: true,
+                discountAmount: true,
+                createdAt: true,
+                estimatedDeliveryAt: true,
+                acceptedAt: true,
+                preparedAt: true,
+                pickedUpAt: true,
+                deliveredAt: true,
+                orderItems: {
+                    select: {
+                        id: true,
+                        itemName: true,
+                        itemPrice: true,
+                        quantity: true,
+                        subtotal: true,
+                    },
+                },
+                restaurant: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true,
+                        addressLine1: true,
+                        latitude: true,
+                        longitude: true,
+                    },
+                },
                 customer: {
                     select: {
                         id: true,
@@ -96,7 +126,11 @@ class OrderRepository {
                 },
                 deliveryAddress: true,
                 deliveryPerson: {
-                    include: {
+                    select: {
+                        id: true,
+                        status: true,
+                        currentLatitude: true,
+                        currentLongitude: true,
                         user: {
                             select: {
                                 firstName: true,
@@ -107,7 +141,14 @@ class OrderRepository {
                         },
                     },
                 },
-                payment: true,
+                payment: {
+                    select: {
+                        id: true,
+                        status: true,
+                        method: true,
+                        amount: true,
+                    },
+                },
                 review: true,
             },
         });
@@ -188,9 +229,14 @@ class OrderRepository {
                     in: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'],
                 },
             },
-            include: {
+            select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                totalAmount: true,
+                createdAt: true,
                 restaurant: {
-                    select: { name: true, logoUrl: true },
+                    select: { name: true, logoUrl: true, id: true },
                 },
             },
             orderBy: { createdAt: 'desc' },

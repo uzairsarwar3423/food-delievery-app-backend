@@ -10,7 +10,17 @@ const cacheService = require('../services/cache.service');
 const logger = require('../config/logger');
 
 const getRestaurants = asyncHandler(async (req, res) => {
+  const cacheKey = cacheService.generateRestaurantKey(req.query);
+  const cachedData = await cacheService.get(cacheKey);
+
+  if (cachedData) {
+    logger.debug(`Cache hit for ${cacheKey}`);
+    return ApiResponse.paginated(res, cachedData.restaurants, cachedData.pagination, 'Restaurants fetched successfully (from cache)');
+  }
+
   const result = await restaurantService.getRestaurants(req.query);
+  await cacheService.set(cacheKey, result, 3600); // Cache for 1 hour
+
   return ApiResponse.paginated(res, result.restaurants, result.pagination, 'Restaurants fetched successfully');
 });
 
@@ -21,7 +31,17 @@ const getRestaurantById = asyncHandler(async (req, res) => {
     longitude: req.query.longitude,
   };
 
+  const cacheKey = `restaurant:details:${id}:${userLocation.latitude}:${userLocation.longitude}`;
+  const cachedData = await cacheService.get(cacheKey);
+
+  if (cachedData) {
+    logger.debug(`Cache hit for ${cacheKey}`);
+    return ApiResponse.success(res, cachedData, 'Restaurant details fetched successfully (from cache)');
+  }
+
   const restaurant = await restaurantService.getRestaurantById(id, userLocation);
+  await cacheService.set(cacheKey, restaurant, 1800); // Cache for 30 mins
+
   return ApiResponse.success(res, restaurant, 'Restaurant details fetched successfully');
 });
 
@@ -45,6 +65,11 @@ const updateRestaurant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const isAdmin = req.user.role === 'ADMIN';
   const restaurant = await restaurantService.updateRestaurant(id, req.user.id, req.body, isAdmin);
+
+  // Invalidate cache
+  await cacheService.clearRestaurantCache();
+  await cacheService.del(`restaurant:details:${id}:*`);
+
   return ApiResponse.success(res, restaurant, 'Restaurant updated successfully');
 });
 
@@ -52,12 +77,22 @@ const deleteRestaurant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const isAdmin = req.user.role === 'ADMIN';
   const result = await restaurantService.deleteRestaurant(id, req.user.id, isAdmin);
+
+  // Invalidate cache
+  await cacheService.clearRestaurantCache();
+  await cacheService.del(`restaurant:details:${id}:*`);
+
   return ApiResponse.success(res, null, result.message);
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const status = await restaurantService.updateStatus(id, req.user.id, req.body.isOpen);
+
+  // Invalidate cache
+  await cacheService.clearRestaurantCache();
+  await cacheService.del(`restaurant:details:${id}:*`);
+
   return ApiResponse.success(res, status, 'Restaurant status updated successfully');
 });
 
