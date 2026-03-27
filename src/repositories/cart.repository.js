@@ -14,6 +14,8 @@ class CartRepository {
             where: { userId },
             select: {
                 id: true,
+                userId: true,
+                menuItemId: true,
                 quantity: true,
                 customizations: true,
                 specialNote: true,
