@@ -10,7 +10,14 @@ class MenuRepository {
      * Find menu items for a restaurant with filters
      */
   async findByRestaurant(restaurantId, { categoryId, isAvailable, search, skip, take = 50 } = {}) {
-    const where = { restaurantId, isAvailable: isAvailable !== undefined ? (isAvailable === 'true' || isAvailable === true) : true };
+    const where = { restaurantId };
+
+    if (isAvailable !== undefined && isAvailable !== 'all') {
+      where.isAvailable = (isAvailable === 'true' || isAvailable === true);
+    } else if (isAvailable === undefined) {
+      // Default to showing only available items for public view
+      where.isAvailable = true;
+    }
 
     if (categoryId) {
       where.categoryId = categoryId;
@@ -34,6 +41,8 @@ class MenuRepository {
         imageUrl: true,
         price: true,
         discountedPrice: true,
+        preparationTime: true,
+        categoryId: true,
         isAvailable: true,
         isVegetarian: true,
         spiceLevel: true,

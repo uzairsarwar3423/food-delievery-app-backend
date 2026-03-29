@@ -40,6 +40,10 @@ const getMenuItemById = asyncHandler(async (req, res) => {
 const createMenuItem = asyncHandler(async (req, res) => {
   const { restaurantId } = req.params;
   const menuItem = await menuService.createMenuItem(restaurantId, req.user.id, req.body, req.file);
+
+  // Invalidate cache
+  await cacheService.clearMenuCache(restaurantId);
+
   return ApiResponse.created(res, menuItem, 'Menu item created successfully');
 });
 

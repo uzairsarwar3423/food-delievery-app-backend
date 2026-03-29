@@ -2,17 +2,10 @@
 // src/services/upload.service.js — Cloudinary File Upload Service
 // =============================================================
 
-const cloudinary = require('cloudinary').v2;
+const { cloudinary } = require('../config/cloudinary');
 const fs = require('fs');
 const logger = require('../config/logger');
 const ApiError = require('../utils/ApiError');
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 class UploadService {
   /**
@@ -40,12 +33,8 @@ class UploadService {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      logger.error('Cloudinary Upload Error Details:', {
-        message: error.message,
-        http_code: error.http_code,
-        name: error.name,
-      });
-      throw new ApiError(500, `Failed to upload image to Cloudinary: ${error.message || 'Unknown error'}`);
+      logger.error('Cloudinary Upload Error Details:', error);
+      throw new ApiError(500, `Failed to upload image to Cloudinary: ${error.message || JSON.stringify(error) || 'Unknown error'}`);
     }
   }
 

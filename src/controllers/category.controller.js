@@ -22,18 +22,30 @@ const getCategoryById = asyncHandler(async (req, res) => {
 
 const createCategory = asyncHandler(async (req, res) => {
   const category = await categoryService.createCategory(req.body, req.file);
+
+  // Invalidate cache
+  await cacheService.clearCategoryCache();
+
   return ApiResponse.created(res, category, 'Category created successfully');
 });
 
 const updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const category = await categoryService.updateCategory(id, req.body, req.file);
+
+  // Invalidate cache
+  await cacheService.clearCategoryCache();
+
   return ApiResponse.success(res, category, 'Category updated successfully');
 });
 
 const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await categoryService.deleteCategory(id);
+
+  // Invalidate cache
+  await cacheService.clearCategoryCache();
+
   return ApiResponse.success(res, null, result.message);
 });
 
@@ -43,6 +55,10 @@ const reorderCategories = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Categories must be an array of objects containing id and displayOrder');
   }
   const result = await categoryService.reorderCategories(categories);
+
+  // Invalidate cache
+  await cacheService.clearCategoryCache();
+
   return ApiResponse.success(res, null, result.message);
 });
 

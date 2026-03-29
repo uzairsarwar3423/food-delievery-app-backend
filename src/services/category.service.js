@@ -44,7 +44,7 @@ class CategoryService {
   }
 
   /**
-     * Create category (Admin only)
+     * Create category (Admin or Restaurant Owner)
      */
   async createCategory(data, file = null) {
     const { name } = data;
@@ -77,7 +77,7 @@ class CategoryService {
   }
 
   /**
-     * Update category (Admin only)
+     * Update category (Admin or Restaurant Owner)
      */
   async updateCategory(id, updateData, file = null) {
     const category = await categoryRepository.findById(id);
