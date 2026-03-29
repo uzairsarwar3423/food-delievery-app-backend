@@ -42,6 +42,13 @@ router.get('/profile',
   restaurantController.getRestaurantProfile,
 );
 
+router.put('/status',
+  authenticate,
+  authorize('RESTAURANT_OWNER'),
+  validate(restaurantValidator.updateStatus),
+  restaurantController.updateMyRestaurantStatus,
+);
+
 router.get('/:id',
   cacheMiddleware(1800), // 30 min
   restaurantController.getRestaurantById,

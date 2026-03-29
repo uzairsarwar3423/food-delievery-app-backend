@@ -40,8 +40,12 @@ class UploadService {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      logger.error('Cloudinary Upload Error:', error);
-      throw new ApiError(500, 'Failed to upload image to Cloudinary');
+      logger.error('Cloudinary Upload Error Details:', {
+        message: error.message,
+        http_code: error.http_code,
+        name: error.name,
+      });
+      throw new ApiError(500, `Failed to upload image to Cloudinary: ${error.message || 'Unknown error'}`);
     }
   }
 
