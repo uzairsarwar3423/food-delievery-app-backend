@@ -11,13 +11,13 @@ const imageService = require('./image.service');
 const ApiError = require('../utils/ApiError');
 const { slugify, getPaginationParams, buildPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
-const { prisma } = require('../config/database');
 
 const RESTAURANT_LISTING_SELECT = {
   id: true,
   name: true,
   slug: true,
   logoUrl: true,
+  coverImageUrl: true,
   status: true,
   isOpen: true,
   isFeatured: true,
@@ -98,6 +98,10 @@ class RestaurantService {
       where.isOpen = true;
     }
 
+    if (priceRange) {
+      where.priceRange = parseInt(priceRange, 10);
+    }
+
     // Sorting
     let orderBy = { createdAt: 'desc' };
     if (sortBy === 'rating') { orderBy = { averageRating: 'desc' }; }
@@ -113,9 +117,7 @@ class RestaurantService {
       take,
       where,
       orderBy,
-      include: {
-        select: RESTAURANT_LISTING_SELECT,
-      },
+      select: RESTAURANT_LISTING_SELECT,
     });
 
     // Distance calculation if lat/long provided
@@ -214,6 +216,28 @@ class RestaurantService {
   }
 
   /**
+   * Get restaurant profile by owner ID
+   */
+  async getRestaurantProfile(ownerId) {
+    const restaurant = await restaurantRepository.findByOwnerId(ownerId, {
+      menuItems: {
+        include: { category: true },
+      },
+    });
+
+    if (!restaurant) {
+      throw new ApiError(404, 'Restaurant not found for this user');
+    }
+
+    // Optimize images
+    return {
+      ...restaurant,
+      logoUrl: imageService.getOptimizedUrl(restaurant.logoUrl, { width: 200, height: 200 }),
+      coverImageUrl: imageService.getOptimizedUrl(restaurant.coverImageUrl, { width: 1200, height: 600 }),
+    };
+  }
+
+  /**
      * Get nearby restaurants
      */
   async getNearbyRestaurants(lat, lon, radius = 5) {
@@ -309,6 +333,7 @@ class RestaurantService {
       deliveryFee: parseFloat(restaurantData.deliveryFee || 0),
       estimatedDeliveryMin: parseInt(restaurantData.estimatedDeliveryMin || 30, 10),
       estimatedDeliveryMax: parseInt(restaurantData.estimatedDeliveryMax || 60, 10),
+      priceRange: parseInt(restaurantData.priceRange || 1, 10),
       cuisineTypes: Array.isArray(restaurantData.cuisineTypes)
         ? restaurantData.cuisineTypes
         : (restaurantData.cuisineTypes ? [restaurantData.cuisineTypes] : []),
@@ -338,7 +363,7 @@ class RestaurantService {
   /**
      * Update restaurant
      */
-  async updateRestaurant(id, ownerId, updateData, isAdmin = false) {
+  async updateRestaurant(id, ownerId, updateData, files = {}, isAdmin = false) {
     const restaurant = await restaurantRepository.findById(id);
     if (!restaurant) {
       throw new ApiError(404, 'Restaurant not found');
@@ -357,6 +382,42 @@ class RestaurantService {
     if (data.deliveryRadius) { data.deliveryRadius = parseFloat(data.deliveryRadius); }
     if (data.minimumOrderAmount) { data.minimumOrderAmount = parseFloat(data.minimumOrderAmount); }
     if (data.deliveryFee) { data.deliveryFee = parseFloat(data.deliveryFee); }
+    if (data.estimatedDeliveryMin) { data.estimatedDeliveryMin = parseInt(data.estimatedDeliveryMin, 10); }
+    if (data.estimatedDeliveryMax) { data.estimatedDeliveryMax = parseInt(data.estimatedDeliveryMax, 10); }
+    if (data.priceRange) { data.priceRange = parseInt(data.priceRange, 10); }
+
+    if (data.cuisineTypes && !Array.isArray(data.cuisineTypes)) {
+      data.cuisineTypes = [data.cuisineTypes];
+    }
+
+    // Handle logo/banner updates
+    if (files.logo) {
+      // Delete old logo if exists
+      if (restaurant.logoUrl) {
+        try {
+          const publicId = uploadService.getPublicIdFromUrl(restaurant.logoUrl);
+          await uploadService.deleteImage(publicId);
+        } catch (err) {
+          logger.error('Error deleting old logo from Cloudinary:', err);
+        }
+      }
+      const result = await uploadService.uploadImage(files.logo[0].path, 'restaurants/logos');
+      data.logoUrl = result.secure_url;
+    }
+
+    if (files.banner) {
+      // Delete old banner if exists
+      if (restaurant.coverImageUrl) {
+        try {
+          const publicId = uploadService.getPublicIdFromUrl(restaurant.coverImageUrl);
+          await uploadService.deleteImage(publicId);
+        } catch (err) {
+          logger.error('Error deleting old banner from Cloudinary:', err);
+        }
+      }
+      const result = await uploadService.uploadImage(files.banner[0].path, 'restaurants/banners');
+      data.coverImageUrl = result.secure_url;
+    }
 
     const updated = await restaurantRepository.update(id, data);
 

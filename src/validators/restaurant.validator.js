@@ -3,7 +3,7 @@
  * Restaurant Validation Schemas
  */
 
-const { body, query, param } = require('express-validator');
+const { body, query } = require('express-validator');
 
 const createRestaurant = [
   body('name').trim().notEmpty().withMessage('Name is required'),
@@ -17,11 +17,29 @@ const createRestaurant = [
   body('postalCode').trim().notEmpty().withMessage('Postal code is required'),
   body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude is required'),
   body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude is required'),
-  body('cuisineTypes').isArray().withMessage('Cuisine types must be an array'),
+  body('cuisineTypes')
+    .customSanitizer((value) => {
+      if (typeof value === 'string') {
+        // Handle JSON stringified array
+        if (value.startsWith('[') && value.endsWith(']')) {
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            return [value];
+          }
+        }
+        // Handle single string (standard multipart/form-data with 1 item)
+        return [value];
+      }
+      return value;
+    })
+    .isArray()
+    .withMessage('Cuisine types must be an array'),
   body('estimatedDeliveryMin').optional().isInt({ min: 1 }).withMessage('Valid delivery minimum time is required'),
   body('estimatedDeliveryMax').optional().isInt({ min: 1 }).withMessage('Valid delivery maximum time is required'),
   body('minimumOrderAmount').optional().isFloat({ min: 0 }).withMessage('Valid minimum order amount is required'),
   body('deliveryFee').optional().isFloat({ min: 0 }).withMessage('Valid delivery fee is required'),
+  body('priceRange').optional().isInt({ min: 1, max: 4 }).withMessage('Price range must be between 1 and 4'),
 ];
 
 const updateRestaurant = [
@@ -39,6 +57,7 @@ const updateRestaurant = [
   body('estimatedDeliveryMax').optional().isInt({ min: 1 }),
   body('minimumOrderAmount').optional().isFloat({ min: 0 }),
   body('deliveryFee').optional().isFloat({ min: 0 }),
+  body('priceRange').optional().isInt({ min: 1, max: 4 }),
 ];
 
 const searchRestaurants = [
@@ -55,6 +74,7 @@ const searchRestaurants = [
   query('radius').optional().isFloat({ min: 0.1 }).toFloat(),
   query('sortBy').optional().isIn(['rating', 'distance', 'deliveryTime', 'popularity', 'relevance']),
   query('isOpen').optional().toBoolean(),
+  query('priceRange').optional().isInt({ min: 1, max: 4 }).toInt(),
 ];
 
 const updateStatus = [

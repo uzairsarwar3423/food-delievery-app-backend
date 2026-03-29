@@ -66,9 +66,15 @@ class CartService {
      * @returns {Promise<Object>}
      */
     async addItemToCart(userId, itemData) {
+        const start = Date.now();
+        console.log(`[PERF] addItemToCart started for user ${userId}`);
+
         const { menuItemId, quantity, customizations, clearIfDifferentRestaurant } = itemData;
 
+        const menuItemStart = Date.now();
         const menuItem = await menuRepository.findById(menuItemId);
+        console.log(`[PERF] menuRepository.findById took ${Date.now() - menuItemStart}ms`);
+
         if (!menuItem) {
             throw new ApiError(404, 'Menu item not found');
         }
@@ -78,7 +84,10 @@ class CartService {
         }
 
         // Check restaurant locking
+        const findExistingStart = Date.now();
         const existingItems = await cartRepository.findByUserId(userId);
+        console.log(`[PERF] cartRepository.findByUserId took ${Date.now() - findExistingStart}ms`);
+
         if (existingItems.length > 0) {
             const firstItemRestaurantId = existingItems[0].menuItem.restaurantId;
             if (firstItemRestaurantId !== menuItem.restaurantId) {
@@ -89,8 +98,10 @@ class CartService {
                     });
                 }
                 // Clear cart for this user
+                const clearCartStart = Date.now();
                 await cartRepository.clearCart(userId);
                 await cartRepository.clearCoupon(userId);
+                console.log(`[PERF] clearCart/clearCoupon took ${Date.now() - clearCartStart}ms`);
             }
         }
 
@@ -99,12 +110,15 @@ class CartService {
 
         if (existingItem) {
             // Update quantity
+            const updateItemStart = Date.now();
             await cartRepository.updateItem(existingItem.id, {
                 quantity: existingItem.quantity + quantity,
                 priceAtAddition: menuItem.price, // Refresh price
             });
+            console.log(`[PERF] cartRepository.updateItem took ${Date.now() - updateItemStart}ms`);
         } else {
             // Add new item
+            const addItemStart = Date.now();
             await cartRepository.addItem({
                 userId,
                 menuItemId,
@@ -112,9 +126,15 @@ class CartService {
                 customizations: customizations || {},
                 priceAtAddition: menuItem.price, // Lock current price
             });
+            console.log(`[PERF] cartRepository.addItem took ${Date.now() - addItemStart}ms`);
         }
 
-        return this.getCart(userId);
+        const getCartStart = Date.now();
+        const result = await this.getCart(userId);
+        console.log(`[PERF] this.getCart took ${Date.now() - getCartStart}ms`);
+
+        console.log(`[PERF] addItemToCart total took ${Date.now() - start}ms`);
+        return result;
     }
 
     /**

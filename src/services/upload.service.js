@@ -52,7 +52,7 @@ class UploadService {
      */
   async deleteImage(publicId) {
     try {
-      if (!publicId) {return null;}
+      if (!publicId) { return null; }
       return await cloudinary.uploader.destroy(publicId);
     } catch (error) {
       logger.error('Cloudinary Delete Error:', error);
@@ -66,7 +66,7 @@ class UploadService {
      * @returns {string|null} - Public ID
      */
   getPublicIdFromUrl(url) {
-    if (!url) {return null;}
+    if (!url) { return null; }
     // Example URL: https://res.cloudinary.com/[cloud_name]/image/upload/v123456789/food-delivery/users/avatars/avatar_123.jpg
     // Public ID: food-delivery/users/avatars/avatar_123
     const parts = url.split('/');

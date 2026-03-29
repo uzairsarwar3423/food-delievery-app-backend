@@ -6,6 +6,7 @@
 const restaurantService = require('../services/restaurant.service');
 const ApiResponse = require('../utils/ApiResponse');
 const asyncHandler = require('../utils/asyncHandler');
+const ApiError = require('../utils/ApiError');
 const cacheService = require('../services/cache.service');
 const logger = require('../config/logger');
 
@@ -64,7 +65,7 @@ const createRestaurant = asyncHandler(async (req, res) => {
 const updateRestaurant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const isAdmin = req.user.role === 'ADMIN';
-  const restaurant = await restaurantService.updateRestaurant(id, req.user.id, req.body, isAdmin);
+  const restaurant = await restaurantService.updateRestaurant(id, req.user.id, req.body, req.files, isAdmin);
 
   // Invalidate cache
   await cacheService.clearRestaurantCache();
@@ -111,6 +112,11 @@ const searchRestaurants = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, restaurants, 'Search completed successfully');
 });
 
+const getRestaurantProfile = asyncHandler(async (req, res) => {
+  const restaurant = await restaurantService.getRestaurantProfile(req.user.id);
+  return ApiResponse.success(res, restaurant, 'Restaurant profile fetched successfully');
+});
+
 module.exports = {
   getRestaurants,
   getRestaurantById,
@@ -122,4 +128,5 @@ module.exports = {
   updateStatus,
   uploadImages,
   searchRestaurants,
+  getRestaurantProfile,
 };

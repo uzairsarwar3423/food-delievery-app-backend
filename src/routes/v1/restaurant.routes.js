@@ -36,6 +36,12 @@ router.get('/search',
   restaurantController.searchRestaurants,
 );
 
+router.get('/profile',
+  authenticate,
+  authorize('RESTAURANT_OWNER', 'ADMIN'),
+  restaurantController.getRestaurantProfile,
+);
+
 router.get('/:id',
   cacheMiddleware(1800), // 30 min
   restaurantController.getRestaurantById,
@@ -56,6 +62,10 @@ router.post('/',
 router.put('/:id',
   authenticate,
   authorize('RESTAURANT_OWNER', 'ADMIN'),
+  upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
+  ]),
   validate(restaurantValidator.updateRestaurant),
   restaurantController.updateRestaurant,
 );

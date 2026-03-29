@@ -19,7 +19,6 @@ class RestaurantRepository {
   }) {
     const queryOptions = {
       where: { ...where },
-      take: take + 1, // Fetch one extra to check for next page
       orderBy,
     };
 
@@ -50,19 +49,27 @@ class RestaurantRepository {
     if (cursor) {
       queryOptions.cursor = { id: cursor };
       queryOptions.skip = 1; // Skip the cursor element itself
-    } else if (skip !== undefined) {
-      queryOptions.skip = skip;
+      queryOptions.take = take + 1; // Fetch one extra for next cursor
+
+      const restaurants = await prisma.restaurant.findMany(queryOptions);
+      let nextCursor = null;
+      if (restaurants.length > take) {
+        const nextItem = restaurants.pop();
+        nextCursor = nextItem.id;
+      }
+      return { restaurants, nextCursor };
     }
 
-    const restaurants = await prisma.restaurant.findMany(queryOptions);
+    // Offset-based pagination
+    queryOptions.skip = skip || 0;
+    queryOptions.take = take;
 
-    let nextCursor = null;
-    if (restaurants.length > take) {
-      const nextItem = restaurants.pop();
-      nextCursor = nextItem.id;
-    }
+    const [restaurants, total] = await Promise.all([
+      prisma.restaurant.findMany(queryOptions),
+      prisma.restaurant.count({ where }),
+    ]);
 
-    return { restaurants, nextCursor };
+    return { restaurants, total };
   }
 
   /**
@@ -86,6 +93,21 @@ class RestaurantRepository {
   async findBySlug(slug) {
     return prisma.restaurant.findUnique({
       where: { slug },
+    });
+  }
+
+  /**
+   * Find restaurant by owner ID
+   */
+  async findByOwnerId(ownerId, include = {}) {
+    return prisma.restaurant.findFirst({
+      where: { ownerId },
+      include: {
+        _count: {
+          select: { reviews: true },
+        },
+        ...include,
+      },
     });
   }
 
