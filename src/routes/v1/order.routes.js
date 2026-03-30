@@ -8,7 +8,10 @@ const router = express.Router();
 const orderController = require('../../controllers/order.controller');
 const orderValidator = require('../../validators/order.validator');
 const validate = require('../../middlewares/validate.middleware');
-const { authenticate } = require('../../middlewares/auth.middleware');
+const { authenticate, authorize } = require('../../middlewares/auth.middleware');
+const restaurantAuth = require('../../middlewares/restaurantAuth.middleware');
+const analyticsController = require('../../controllers/analytics.controller');
+const { ROLES } = require('../../utils/constants');
 
 // All order routes are authenticated
 router.use(authenticate);
@@ -21,8 +24,14 @@ router.get('/active', orderController.getActiveOrders);
 
 /** 
  * GET /api/v1/orders/stats
+ * Summary stats for dashboard (scoping depends on role)
  */
-router.get('/stats', orderController.getStats);
+router.get('/stats', (req, res, next) => {
+    if (req.user.role === ROLES.RESTAURANT_OWNER) {
+        return restaurantAuth(req, res, () => analyticsController.getDashboardStats(req, res, next));
+    }
+    return orderController.getStats(req, res, next);
+});
 
 /**
  * GET /api/v1/orders
