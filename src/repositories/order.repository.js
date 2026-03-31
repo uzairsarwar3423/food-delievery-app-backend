@@ -222,7 +222,7 @@ class OrderRepository {
     }
 
     /**
-     * Get active orders for a user
+     * Find active orders for a user
      */
     async findActiveByUserId(userId) {
         return prisma.order.findMany({
@@ -241,9 +241,76 @@ class OrderRepository {
                 restaurant: {
                     select: { name: true, logoUrl: true, id: true },
                 },
+                orderItems: {
+                    select: { itemName: true, quantity: true },
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
+    }
+
+    /**
+     * Find orders for a restaurant with filters
+     */
+    async findByRestaurantId(restaurantId, { page = 1, limit = 10, status, dateFrom, dateTo } = {}) {
+        const where = { restaurantId };
+
+        if (status) {
+            const statusMap = {
+                'pending': 'PENDING',
+                'confirmed': 'CONFIRMED',
+                'preparing': 'PREPARING',
+                'ready': 'READY_FOR_PICKUP',
+                'picked_up': 'OUT_FOR_DELIVERY',
+                'delivering': 'OUT_FOR_DELIVERY',
+                'delivered': 'DELIVERED',
+                'cancelled': 'CANCELLED',
+                'refunded': 'REFUNDED'
+            };
+
+            const statusList = typeof status === 'string' ? status.split(',') : (Array.isArray(status) ? status : [status]);
+            const mappedStatuses = [...new Set(statusList.map(s => {
+                const normalized = s.toString().toLowerCase().trim();
+                return statusMap[normalized] || normalized.toUpperCase();
+            }))];
+
+            if (mappedStatuses.length === 1) {
+                where.status = mappedStatuses[0];
+            } else if (mappedStatuses.length > 1) {
+                where.status = { in: mappedStatuses };
+            }
+        }
+
+        if (dateFrom || dateTo) {
+            where.createdAt = {};
+            if (dateFrom) { where.createdAt.gte = new Date(dateFrom); }
+            if (dateTo) { where.createdAt.lte = new Date(dateTo); }
+        }
+
+        const skip = (page - 1) * limit;
+
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where,
+                include: {
+                    customer: {
+                        select: { firstName: true, lastName: true, email: true, phone: true },
+                    },
+                    orderItems: {
+                        select: { itemName: true, quantity: true, itemPrice: true, subtotal: true },
+                    },
+                    payment: {
+                        select: { status: true, method: true }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: parseInt(limit),
+            }),
+            prisma.order.count({ where }),
+        ]);
+
+        return { orders, total };
     }
 
     /**
@@ -292,13 +359,29 @@ class OrderRepository {
     }
 
     /**
-     * Check if user has already reviewed an order
+     * Get active orders for a restaurant
      */
-    async hasReview(orderId) {
-        const review = await prisma.review.findUnique({
-            where: { orderId },
+    async findActiveByRestaurantId(restaurantId) {
+        return prisma.order.findMany({
+            where: {
+                restaurantId,
+                status: {
+                    in: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'],
+                },
+            },
+            include: {
+                customer: {
+                    select: { firstName: true, email: true, phone: true },
+                },
+                orderItems: {
+                    select: { itemName: true, quantity: true },
+                },
+                payment: {
+                    select: { status: true, method: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
         });
-        return !!review;
     }
 
     /**

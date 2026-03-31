@@ -103,6 +103,20 @@ class OrderService {
     }
 
     /**
+     * Fetch orders for a specific restaurant (for owners)
+     */
+    async getRestaurantOrders(ownerId, filters) {
+        // 1. Find the restaurant(s) owned by this user
+        const restaurant = await restaurantRepository.findByOwnerId(ownerId);
+        if (!restaurant) {
+            throw new ApiError(404, 'No restaurant found for this user');
+        }
+
+        // 2. Fetch orders for this restaurant
+        return orderRepository.findByRestaurantId(restaurant.id, filters);
+    }
+
+    /**
      * Get full order details
      */
     async getOrderDetails(orderId, currentUser) {
@@ -185,9 +199,16 @@ class OrderService {
     }
 
     /**
-     * Fetch active orders for current user
+     * Fetch active orders for current user or restaurant
      */
-    async getActiveOrders(userId) {
+    async getActiveOrders(userId, role) {
+        if (role === ROLES.RESTAURANT_OWNER) {
+            const restaurant = await restaurantRepository.findByOwnerId(userId);
+            if (!restaurant) {
+                return [];
+            }
+            return orderRepository.findActiveByRestaurantId(restaurant.id);
+        }
         return orderRepository.findActiveByUserId(userId);
     }
 
@@ -314,8 +335,8 @@ class OrderService {
                 roles: [ROLES.ADMIN, ROLES.RESTAURANT_OWNER],
             },
             [ORDER_STATUS.READY_FOR_PICKUP]: {
-                allowedTargets: [ORDER_STATUS.OUT_FOR_DELIVERY],
-                roles: [ROLES.ADMIN, ROLES.DELIVERY_PERSON],
+                allowedTargets: [ORDER_STATUS.OUT_FOR_DELIVERY, ORDER_STATUS.DELIVERED],
+                roles: [ROLES.ADMIN, ROLES.DELIVERY_PERSON, ROLES.RESTAURANT_OWNER],
             },
             [ORDER_STATUS.OUT_FOR_DELIVERY]: {
                 allowedTargets: [ORDER_STATUS.DELIVERED],

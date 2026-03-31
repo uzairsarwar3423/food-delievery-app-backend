@@ -50,4 +50,21 @@ const otpLimiter = rateLimit({
   },
 });
 
-module.exports = { apiLimiter, authLimiter, otpLimiter };
+// Dashboard / Analytics limiter — higher threshold for frequent polling
+const dashboardLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: parseInt(process.env.DASHBOARD_RATE_LIMIT_MAX, 10) || 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: 'Dashboard request limit reached. Please try again later.',
+  },
+  handler: (req, res, _next, options) => {
+    logger.warn(`Dashboard rate limit hit: ${req.ip} — ${req.originalUrl}`);
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+module.exports = { apiLimiter, authLimiter, otpLimiter, dashboardLimiter };

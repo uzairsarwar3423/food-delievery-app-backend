@@ -6,7 +6,7 @@
 const orderService = require('../services/order.service');
 const ApiResponse = require('../utils/ApiResponse');
 const asyncHandler = require('../utils/asyncHandler');
-const { PAGINATION } = require('../utils/constants');
+const { PAGINATION, ROLES } = require('../utils/constants');
 
 /**
  * @desc    Create a new order from cart
@@ -19,26 +19,29 @@ const createOrder = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get order history for current user
+ * @desc    Get order history for current user or restaurant
  * @route   GET /api/v1/orders
- * @access  Private (Customer)
+ * @access  Private (Customer/Restaurant Owner)
  */
 const getOrderHistory = asyncHandler(async (req, res) => {
     const { page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT, status, dateFrom, dateTo } = req.query;
-    const { orders, total } = await orderService.getOrderHistory(req.user.id, {
-        page,
-        limit,
-        status,
-        dateFrom,
-        dateTo,
-    });
+    const filters = { page, limit, status, dateFrom, dateTo };
+
+    let result;
+    if (req.user.role === ROLES.RESTAURANT_OWNER) {
+        result = await orderService.getRestaurantOrders(req.user.id, filters);
+    } else {
+        result = await orderService.getOrderHistory(req.user.id, filters);
+    }
+
+    const { orders, total } = result;
 
     return ApiResponse.paginated(res, orders, {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
         totalPages: Math.ceil(total / limit),
-    }, 'Order history fetched successfully');
+    }, 'Orders fetched successfully');
 });
 
 /**
@@ -72,12 +75,12 @@ const trackOrder = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get active orders
+ * @desc    Get active orders for current user or restaurant
  * @route   GET /api/v1/orders/active
- * @access  Private (Customer/Rider)
+ * @access  Private (Customer/Rider/Restaurant Owner)
  */
 const getActiveOrders = asyncHandler(async (req, res) => {
-    const orders = await orderService.getActiveOrders(req.user.id);
+    const orders = await orderService.getActiveOrders(req.user.id, req.user.role);
     return ApiResponse.success(res, orders, 'Active orders fetched successfully');
 });
 

@@ -8,9 +8,10 @@ const router = express.Router();
 const analyticsController = require('../../controllers/analytics.controller');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const restaurantAuth = require('../../middlewares/restaurantAuth.middleware');
+const { dashboardLimiter } = require('../../middlewares/rateLimiter.middleware');
 
-// All analytics routes require authentication and restaurant owner context
-router.use(authenticate, restaurantAuth);
+// All analytics routes require authentication, restaurant owner context, and dashboard rate limiting
+router.use(authenticate, restaurantAuth, dashboardLimiter);
 
 /**
  * Dashboard & Order Stats

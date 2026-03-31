@@ -162,9 +162,9 @@ curl -X POST http://localhost:5000/api/v1/auth/register \
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/orders` | History (?page&limit) | Yes |
+| `GET` | `/orders` | History (?page&limit). Scoped to Customer or Restaurant Owner. | Yes |
 | `POST` | `/orders` | Place order | Yes |
-| `GET` | `/orders/active` | Active orders | Yes |
+| `GET` | `/orders/active` | Active orders. Scoped to Customer or Restaurant Owner. | Yes |
 | `GET` | `/orders/stats` | Stats | Yes |
 | `GET` | `/orders/{id}` | Details | Yes |
 | `PUT` | `/orders/{id}/cancel` | Cancel | Yes |
