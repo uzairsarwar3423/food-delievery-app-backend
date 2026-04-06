@@ -14,6 +14,7 @@ const { parse } = require('csv-parse/sync');
 const fs = require('fs');
 const logger = require('../config/logger');
 const { prisma } = require('../config/database');
+const { addBackgroundTask } = require('../jobs/backgroundQueue');
 
 class MenuService {
     /**
@@ -228,26 +229,14 @@ class MenuService {
         // Clear cache
         await cacheService.clearMenuCache(item.restaurantId);
 
-        // Notify users if becoming unavailable
+        // Notify users if becoming unavailable (Offloaded to background)
         if (!isAvailable) {
-            const userIds = await menuRepository.getUsersWithItemInCart(id);
-            if (userIds.length > 0) {
-                // Bulk create notifications
-                const notifications = userIds.map((userId) => ({
-                    userId,
-                    type: 'SYSTEM',
-                    title: 'Item Unavailable',
-                    body: `The item "${item.name}" from ${item.restaurant.name} is no longer available and has been removed from your cart.`,
-                    data: { menuItemId: id, restaurantId: item.restaurantId },
-                }));
-
-                await prisma.notification.createMany({ data: notifications });
-
-                // Remove from carts
-                await prisma.cartItem.deleteMany({
-                    where: { menuItemId: id },
-                });
-            }
+            await addBackgroundTask('CLEANUP_UNAVAILABLE_ITEM', {
+                menuItemId: id,
+                restaurantId: item.restaurantId,
+                itemName: item.name,
+                restaurantName: item.restaurant.name
+            });
         }
 
         return { isAvailable: updated.isAvailable };
@@ -325,56 +314,15 @@ class MenuService {
             throw new ApiError(403, 'Not authorized');
         }
 
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const records = parse(fileContent, {
-            columns: true,
-            skip_empty_lines: true,
+        // Offload to background task for performance
+        await addBackgroundTask('IMPORT_MENU', {
+            restaurantId,
+            filePath,
         });
 
-        const itemsToCreate = [];
-        const errors = [];
-
-        for (const [index, record] of records.entries()) {
-            try {
-                // Basic validation
-                if (!record.name || !record.price || !record.categoryId) {
-                    errors.push({ row: index + 1, error: 'Missing required fields (name, price, categoryId)' });
-                    continue;
-                }
-
-                itemsToCreate.push({
-                    restaurantId,
-                    name: record.name,
-                    slug: `${slugify(record.name)}-${Math.floor(Math.random() * 10000)}`,
-                    description: record.description || null,
-                    categoryId: record.categoryId,
-                    price: parseFloat(record.price),
-                    discountedPrice: record.discountPrice ? parseFloat(record.discountPrice) : null,
-                    preparationTime: parseInt(record.preparationTime || 15, 10),
-                    isAvailable: record.isAvailable !== 'false',
-                    isVegetarian: record.isVegetarian === 'true',
-                    isVegan: record.isVegan === 'true',
-                    spiceLevel: parseInt(record.spiceLevel || 0, 10),
-                    calories: record.calories ? parseInt(record.calories, 10) : null,
-                    allergens: record.allergens ? record.allergens.split(',').map((s) => s.trim()) : [],
-                    tags: record.tags ? record.tags.split(',').map((s) => s.trim()) : [],
-                });
-            } catch (err) {
-                errors.push({ row: index + 1, error: err.message });
-            }
-        }
-
-        if (itemsToCreate.length > 0) {
-            await menuRepository.bulkCreate(itemsToCreate);
-            await cacheService.clearMenuCache(restaurantId);
-        }
-
-        // Delete temp file
-        fs.unlinkSync(filePath);
-
         return {
-            imported: itemsToCreate.length,
-            errors,
+            message: 'Import started in background. Results will be available shortly.',
+            status: 'processing'
         };
     }
 

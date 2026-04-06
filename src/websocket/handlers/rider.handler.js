@@ -15,7 +15,7 @@ const locationEvents = require('../events/location.events');
 const registerRiderHandlers = (socket, io) => {
 
     // Only allow riders to send location updates
-    if (socket.user.role !== 'RIDER') return;
+    if (socket.user.role !== 'DELIVERY_PERSON') return;
 
     // Handle rider going online
     socket.on('rider:online', async () => {

@@ -54,10 +54,22 @@ const orderWorker = new Worker('order-processing', async (job) => {
             case 'NOTIFY_STATUS_CHANGE': {
                 const order = await orderRepository.findById(orderId);
                 if (order) {
+                    // Map OrderStatus to NotificationType enum in Prisma
+                    const statusToNotificationType = {
+                        CONFIRMED: 'ORDER_CONFIRMED',
+                        PREPARING: 'ORDER_PREPARING',
+                        READY_FOR_PICKUP: 'ORDER_READY',
+                        OUT_FOR_DELIVERY: 'ORDER_OUT_FOR_DELIVERY',
+                        DELIVERED: 'ORDER_DELIVERED',
+                        CANCELLED: 'ORDER_CANCELLED',
+                    };
+
+                    const notificationType = statusToNotificationType[job.data.newStatus] || 'SYSTEM';
+
                     await notificationService.send(order.customerId, {
-                        type: 'ORDER_STATUS',
+                        type: notificationType,
                         title: 'Order Update',
-                        body: `Your order ${order.orderNumber} is now ${job.data.newStatus}`,
+                        body: `Your order ${order.orderNumber} is now ${job.data.newStatus.replace(/_/g, ' ')}`,
                         data: { orderId, status: job.data.newStatus }
                     });
                     logger.info(`🔔 [OrderQueue] Customer notified of status change to ${job.data.newStatus} for order ${orderId}`);

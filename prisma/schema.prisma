@@ -137,6 +137,7 @@ model Restaurant {
   @@index([status, isOpen, isFeatured, averageRating(sort: Desc)])
   @@index([latitude, longitude])
   @@index([isOpen])
+  @@index([cuisineTypes], type: Gin)
   @@map("restaurants")
 }
 
@@ -176,6 +177,7 @@ model MenuItem {
   @@index([isAvailable])
   @@index([price])
   @@index([slug])
+  @@index([tags], type: Gin)
   @@map("menu_items")
 }
 
@@ -244,6 +246,7 @@ model Order {
   @@index([restaurantId, createdAt(sort: Desc)])
   @@index([deliveryPersonId])
   @@index([orderNumber])
+  @@index([createdAt(sort: Desc)])
   @@map("orders")
 }
 

@@ -93,7 +93,10 @@ const emitOrderReady = (order) => {
     emitToAllRooms(rooms, 'order:ready', {
         orderId: order.id,
         status: order.status,
-        pickupLocation: order.restaurant?.location
+        pickupLocation: {
+            lat: order.restaurant?.latitude,
+            lng: order.restaurant?.longitude
+        }
     });
 };
 

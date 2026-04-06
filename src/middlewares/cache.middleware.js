@@ -18,6 +18,11 @@ const cacheMiddleware = (ttl = 3600, useUserSpecific = false) => {
       return next();
     }
 
+    // Skip caching if requested (e.g., via No-Cache header)
+    if (req.headers['cache-control'] === 'no-cache') {
+      return next();
+    }
+
     // Build cache key
     let key = `cache:${req.originalUrl || req.url}`;
 
@@ -29,9 +34,12 @@ const cacheMiddleware = (ttl = 3600, useUserSpecific = false) => {
     try {
       const cachedData = await cacheService.get(key);
       if (cachedData) {
-        logger.debug(`Cache hit for key: ${key}`);
+        logger.debug(`🚀 [Cache] Hit: ${key}`);
+        // Return cached data immediately
         return res.status(200).json(cachedData);
       }
+
+      logger.debug(`🏮 [Cache] Miss: ${key}`);
 
       // Store the original res.json function
       const originalJson = res.json;
@@ -40,8 +48,9 @@ const cacheMiddleware = (ttl = 3600, useUserSpecific = false) => {
       res.json = function (data) {
         // Save to cache before sending response
         if (res.statusCode >= 200 && res.statusCode < 300) {
+          // Asynchronous cache set - don't block the response
           cacheService.set(key, data, ttl).catch((err) => {
-            logger.error(`Failed to cache response for ${key}:`, err);
+            logger.error(`❌ [Cache] Set Error for ${key}:`, err);
           });
         }
 
@@ -50,10 +59,9 @@ const cacheMiddleware = (ttl = 3600, useUserSpecific = false) => {
         return res.json(data);
       };
 
-      logger.debug(`Cache miss for key: ${key}`);
       next();
     } catch (err) {
-      logger.error('Cache middleware error:', err);
+      logger.error('⚠️ [Cache] Middleware error (falling back to DB):', err);
       next();
     }
   };

@@ -173,6 +173,8 @@ class OrderRepository {
                 'picked_up': 'OUT_FOR_DELIVERY',
                 'delivering': 'OUT_FOR_DELIVERY',
                 'delivered': 'DELIVERED',
+                'completed': 'DELIVERED',
+                'active': ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'],
                 'cancelled': 'CANCELLED',
                 'refunded': 'REFUNDED'
             };
@@ -180,10 +182,11 @@ class OrderRepository {
             // Handle comma-separated string or array
             const statusList = typeof status === 'string' ? status.split(',') : (Array.isArray(status) ? status : [status]);
 
-            // Normalize and map statuses, removing duplicates
-            const mappedStatuses = [...new Set(statusList.map(s => {
+            // Normalize and map statuses, removing duplicates and expanding arrays
+            const mappedStatuses = [...new Set(statusList.flatMap(s => {
                 const normalized = s.toString().toLowerCase().trim();
-                return statusMap[normalized] || normalized.toUpperCase();
+                const mapped = statusMap[normalized] || normalized.toUpperCase();
+                return Array.isArray(mapped) ? mapped : [mapped];
             }))];
 
             if (mappedStatuses.length === 1) {
@@ -256,6 +259,7 @@ class OrderRepository {
         const where = { restaurantId };
 
         if (status) {
+            // Mapping for common frontend/API status names to Prisma enum values
             const statusMap = {
                 'pending': 'PENDING',
                 'confirmed': 'CONFIRMED',
@@ -264,14 +268,20 @@ class OrderRepository {
                 'picked_up': 'OUT_FOR_DELIVERY',
                 'delivering': 'OUT_FOR_DELIVERY',
                 'delivered': 'DELIVERED',
+                'completed': 'DELIVERED',
+                'active': ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'],
                 'cancelled': 'CANCELLED',
                 'refunded': 'REFUNDED'
             };
 
+            // Handle comma-separated string or array
             const statusList = typeof status === 'string' ? status.split(',') : (Array.isArray(status) ? status : [status]);
-            const mappedStatuses = [...new Set(statusList.map(s => {
+
+            // Normalize and map statuses, removing duplicates and expanding arrays
+            const mappedStatuses = [...new Set(statusList.flatMap(s => {
                 const normalized = s.toString().toLowerCase().trim();
-                return statusMap[normalized] || normalized.toUpperCase();
+                const mapped = statusMap[normalized] || normalized.toUpperCase();
+                return Array.isArray(mapped) ? mapped : [mapped];
             }))];
 
             if (mappedStatuses.length === 1) {
