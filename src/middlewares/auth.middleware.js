@@ -14,9 +14,9 @@ const { cacheGet, cacheSet } = require('../config/redis');
 const authenticate = asyncHandler(async (req, _res, next) => {
   // 1. Extract token from headers or cookies
   const token =
-        req.headers.authorization?.startsWith('Bearer ')
-          ? req.headers.authorization.split(' ')[1]
-          : req.cookies?.accessToken;
+    req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.split(' ')[1]
+      : req.cookies?.accessToken;
 
   if (!token) {
     throw ApiError.unauthorized('Access token is required');
@@ -56,8 +56,8 @@ const authenticate = asyncHandler(async (req, _res, next) => {
       throw ApiError.unauthorized('User not found');
     }
 
-    // Cache for 5 minutes
-    await cacheSet(cacheKey, user, 300);
+    // Cache for 15 minutes (was 5) — reduces DB hits on active users
+    await cacheSet(cacheKey, user, 900);
   }
 
   if (!user.isActive) {
@@ -87,9 +87,9 @@ const authorize = (...roles) =>
 const optionalAuth = asyncHandler(async (req, _res, next) => {
   try {
     const token =
-            req.headers.authorization?.startsWith('Bearer ')
-              ? req.headers.authorization.split(' ')[1]
-              : req.cookies?.accessToken;
+      req.headers.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.split(' ')[1]
+        : req.cookies?.accessToken;
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);

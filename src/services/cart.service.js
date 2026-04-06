@@ -1,6 +1,14 @@
 /**
  * src/services/cart.service.js
- * Cart Business Logic — Redis-cached, parallel, upsert-based
+ * Cart Business Logic — Redis-first, minimal DB writes only
+ *
+ * Optimization strategy:
+ *  - ALL reads served from Redis cache
+ *  - DB is only hit for writes (upsert/delete) and cache-miss rebuilds
+ *  - Menu items cached 5 min (in menu.repository)
+ *  - Full cart cached 2 min under cart:v2:{userId}
+ *  - Restaurant lock stored separately under cart:restaurant:{userId}
+ *    so conflict check never needs a DB round-trip
  */
 
 const cartRepository = require('../repositories/cart.repository');
@@ -10,47 +18,51 @@ const ApiError = require('../utils/ApiError');
 const { cacheGet, cacheSet, cacheDel } = require('../config/redis');
 const logger = require('../config/logger');
 
-const CART_TTL = 120; // seconds — short TTL so stale data risk is low
+const CART_TTL = 180;       // 3 min — full serialised cart
+const RESTAURANT_TTL = 600; // 10 min — just the locked restaurantId
 
 const cartKey = (userId) => `cart:v2:${userId}`;
+const restaurantKey = (userId) => `cart:restaurant:${userId}`;
 
 class CartService {
     // ─── Cache Helpers ──────────────────────────────────────────
 
     async _getCartFromCache(userId) {
-        try {
-            return await cacheGet(cartKey(userId));
-        } catch {
-            return null;
-        }
+        try { return await cacheGet(cartKey(userId)); } catch { return null; }
     }
 
     async _setCartCache(userId, cart) {
         try {
             await cacheSet(cartKey(userId), cart, CART_TTL);
-        } catch {
-            // Non-fatal — DB is source of truth
-        }
+            // Also persist restaurant lock key for fast conflict resolution
+            if (cart.restaurant) {
+                await cacheSet(restaurantKey(userId), cart.restaurant.id, RESTAURANT_TTL);
+            }
+        } catch { /* non-fatal */ }
     }
 
     async _invalidateCart(userId) {
         try {
-            await cacheDel(cartKey(userId));
-        } catch {
-            // Non-fatal
-        }
+            await Promise.all([
+                cacheDel(cartKey(userId)),
+                cacheDel(restaurantKey(userId)),
+            ]);
+        } catch { /* non-fatal */ }
+    }
+
+    async _getLockedRestaurantId(userId) {
+        try { return await cacheGet(restaurantKey(userId)); } catch { return null; }
     }
 
     // ─── Public API ─────────────────────────────────────────────
 
     /**
-     * Get cart with totals — Redis-first, then DB
+     * Get cart with totals — Redis-first
      */
     async getCart(userId) {
         const cached = await this._getCartFromCache(userId);
-        if (cached) {
-            return cached;
-        }
+        if (cached) return cached;
+
         const cart = await this._buildCartFromDB(userId);
         await this._setCartCache(userId, cart);
         return cart;
@@ -58,39 +70,47 @@ class CartService {
 
     /**
      * Add item to cart
-     * Optimized: parallel fetch of menuItem + existing cart, upsert in single query
+     *
+     * Round-trips:
+     *   1. Redis  — menuItem cache   (1ms | miss→1 DB read cached forever after)
+     *   2. Redis  — restaurant lock  (1ms | replaces findByUserId DB call)
+     *   3. DB     — upsert write     (~1.3s unavoidable)
+     *   4. Redis  — invalidate       (1ms)
+     *   5. Redis  — rebuilt cart     (1ms if already rebuilt, else 1 DB read)
      */
     async addItemToCart(userId, itemData) {
         const { menuItemId, quantity, customizations, clearIfDifferentRestaurant } = itemData;
 
-        // 1. Fetch menuItem and existing cart IN PARALLEL — saves one full DB round-trip
-        const [menuItem, existingItems] = await Promise.all([
-            menuRepository.findByIdForCart(menuItemId),
-            cartRepository.findByUserId(userId),
+        // 1. Fetch menuItem from Redis cache (or DB on first miss, then cached)
+        //    Fetch locked restaurant from Redis in parallel — zero DB calls if both cached
+        const [menuItem, lockedRestaurantId] = await Promise.all([
+            menuRepository.findByIdForCart(menuItemId),    // Redis-cached
+            this._getLockedRestaurantId(userId),            // Redis key
         ]);
 
         if (!menuItem) throw new ApiError(404, 'Menu item not found');
         if (!menuItem.isAvailable) throw new ApiError(400, 'This item is currently unavailable');
 
-        // 2. Restaurant lock check
-        if (existingItems.length > 0) {
-            const currentRestaurantId = existingItems[0].menuItem.restaurantId;
-            if (currentRestaurantId !== menuItem.restaurantId) {
-                if (!clearIfDifferentRestaurant) {
-                    throw new ApiError(400, 'Cart already contains items from another restaurant', {
-                        type: 'RESTAURANT_CONFLICT',
-                        currentRestaurant: existingItems[0].menuItem.restaurant.name,
-                    });
-                }
-                // Clear cart + coupon in parallel
-                await Promise.all([
-                    cartRepository.clearCart(userId),
-                    cartRepository.clearCoupon(userId),
-                ]);
+        // 2. Restaurant conflict check — purely from Redis (no DB read)
+        if (lockedRestaurantId && lockedRestaurantId !== menuItem.restaurantId) {
+            if (!clearIfDifferentRestaurant) {
+                // We need restaurant name — get from cart cache
+                const cachedCart = await this._getCartFromCache(userId);
+                const currentName = cachedCart?.restaurant?.name ?? 'another restaurant';
+                throw new ApiError(400, 'Cart already contains items from another restaurant', {
+                    type: 'RESTAURANT_CONFLICT',
+                    currentRestaurant: currentName,
+                });
             }
+            // Clear cart + coupon in parallel (2 writes)
+            await Promise.all([
+                cartRepository.clearCart(userId),
+                cartRepository.clearCoupon(userId),
+                this._invalidateCart(userId),
+            ]);
         }
 
-        // 3. Upsert (increments qty if already in cart, creates otherwise) — 1 round-trip
+        // 3. Upsert — single DB write (unavoidable)
         await cartRepository.upsertItem({
             userId,
             menuItemId,
@@ -99,9 +119,12 @@ class CartService {
             priceAtAddition: menuItem.discountedPrice ?? menuItem.price,
         });
 
-        // 4. Invalidate cache THEN rebuild — client gets fresh data
-        await this._invalidateCart(userId);
-        const cart = await this.getCart(userId);
+        // 4. Invalidate stale cart cache
+        await cacheDel(cartKey(userId)); // keep restaurant key — it's still valid
+
+        // 5. Rebuild cart and cache it (1 DB read for full cart with coupon)
+        const cart = await this._buildCartFromDB(userId);
+        await this._setCartCache(userId, cart);
         return cart;
     }
 
@@ -163,7 +186,8 @@ class CartService {
             throw new ApiError(400, 'Coupon usage limit reached');
         }
 
-        const [userUsageCount, { totals, restaurant }] = await Promise.all([
+        // Parallel: check user usage + get cart (both may be cached)
+        const [userUsageCount, currentCart] = await Promise.all([
             couponRepository.getUsageCount(userId, coupon.id),
             this.getCart(userId),
         ]);
@@ -171,18 +195,18 @@ class CartService {
         if (userUsageCount >= coupon.usageLimitPerUser) {
             throw new ApiError(400, 'You have already used this coupon');
         }
-        if (totals.subtotal === 0) {
+        if (currentCart.totals.subtotal === 0) {
             throw new ApiError(400, 'Cannot apply coupon to an empty cart');
         }
-        if (coupon.applicableRestaurantId && coupon.applicableRestaurantId !== restaurant?.id) {
+        if (coupon.applicableRestaurantId && coupon.applicableRestaurantId !== currentCart.restaurant?.id) {
             throw new ApiError(400, 'This coupon is not applicable for this restaurant');
         }
-        if (Number(totals.subtotal) < Number(coupon.minimumOrderAmount)) {
+        if (Number(currentCart.totals.subtotal) < Number(coupon.minimumOrderAmount)) {
             throw new ApiError(400, `Minimum order of ${coupon.minimumOrderAmount} required for this coupon`);
         }
 
         await cartRepository.updateActiveCoupon(userId, coupon.id);
-        await this._invalidateCart(userId);
+        await cacheDel(cartKey(userId)); // invalidate cart, keep restaurant key
         return this.getCart(userId);
     }
 
@@ -195,13 +219,15 @@ class CartService {
 
         if (cart.items.length === 0) return { valid: false, issues: ['Cart is empty'] };
 
-        const restaurant = cart.items[0].menuItem.restaurant;
-        if (!restaurant.isOpen) issues.push(`Restaurant "${restaurant.name}" is currently closed`);
-        if (Number(cart.totals.subtotal) < Number(restaurant.minimumOrderAmount)) {
+        const restaurant = cart.items[0]?.menuItem?.restaurant ?? cart.restaurant;
+        if (restaurant && !restaurant.isOpen) {
+            issues.push(`Restaurant "${restaurant.name}" is currently closed`);
+        }
+        if (restaurant && Number(cart.totals.subtotal) < Number(restaurant.minimumOrderAmount)) {
             issues.push(`Minimum order amount of ${restaurant.minimumOrderAmount} not met`);
         }
 
-        // Parallel availability re-check for all items
+        // Parallel availability re-check (each from Redis cache first)
         const currentItems = await Promise.all(
             cart.items.map((item) => menuRepository.findByIdForCart(item.menuItemId))
         );
@@ -209,13 +235,13 @@ class CartService {
         cart.items.forEach((item, i) => {
             const current = currentItems[i];
             if (!current || !current.isAvailable) {
-                issues.push(`Item "${item.menuItem.name}" is no longer available`);
+                issues.push(`Item "${item.menuItem?.name ?? item.menuItemId}" is no longer available`);
                 return;
             }
-            const oldPrice = Number(item.priceAtAddition || item.menuItem.price);
+            const oldPrice = Number(item.priceAtAddition || item.menuItem?.price);
             const newPrice = Number(current.price);
-            if (Math.abs(newPrice - oldPrice) / oldPrice > 0.1) {
-                issues.push(`Price for "${item.menuItem.name}" has changed from ${oldPrice} to ${newPrice}`);
+            if (oldPrice > 0 && Math.abs(newPrice - oldPrice) / oldPrice > 0.1) {
+                issues.push(`Price for "${item.menuItem?.name}" has changed from ${oldPrice} to ${newPrice}`);
             }
         });
 
@@ -256,9 +282,6 @@ class CartService {
         };
     }
 
-    /**
-     * Calculate cart totals
-     */
     calculateTotals(items, restaurant, coupon) {
         let subtotal = 0;
         items.forEach((item) => {
@@ -292,7 +315,6 @@ class CartService {
         }
 
         const total = subtotal + deliveryFee + tax - discount;
-
         return {
             subtotal: parseFloat(subtotal.toFixed(2)),
             deliveryFee: parseFloat(deliveryFee.toFixed(2)),

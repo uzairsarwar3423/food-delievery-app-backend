@@ -4,6 +4,10 @@
  */
 
 const { prisma } = require('../config/database');
+const { cacheGet, cacheSet, cacheDel } = require('../config/redis');
+
+const MENU_ITEM_TTL = 300; // 5 minutes
+const menuItemKey = (id) => `menu:item:cart:${id}`;
 
 class MenuRepository {
   /**
@@ -82,11 +86,15 @@ class MenuRepository {
   }
 
   /**
-     * Find menu item by ID — lean select for cart operations
+     * Find menu item by ID — lean select for cart operations (Redis-cached)
      * No category join, only fields needed to validate & price items
      */
   async findByIdForCart(id) {
-    return prisma.menuItem.findUnique({
+    const key = menuItemKey(id);
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
+    const item = await prisma.menuItem.findUnique({
       where: { id },
       select: {
         id: true,
@@ -97,6 +105,16 @@ class MenuRepository {
         restaurantId: true,
       },
     });
+
+    if (item) await cacheSet(key, item, MENU_ITEM_TTL);
+    return item;
+  }
+
+  /**
+     * Invalidate cached menu item (call on price/availability update)
+     */
+  async clearMenuItemCache(id) {
+    await cacheDel(menuItemKey(id));
   }
 
   /**

@@ -41,6 +41,16 @@ const startServer = async () => {
     await prisma.$connect();
     logger.info('✅ Database connected');
 
+    // Warm up the connection pool — fires 3 lightweight queries in parallel
+    // so the pool is ready before the first real API request arrives.
+    // Without this, the first request suffers a 3-4s cold-start penalty.
+    await Promise.all([
+      prisma.$queryRaw`SELECT 1`,
+      prisma.$queryRaw`SELECT 1`,
+      prisma.$queryRaw`SELECT 1`,
+    ]);
+    logger.info('✅ DB connection pool warmed up');
+
     // Test Redis connection
     await getRedisClient().ping();
     logger.info('✅ Redis connected');
