@@ -1,43 +1,242 @@
 /**
  * src/services/cart.service.js
- * Cart Business Logic and Calculations
+ * Cart Business Logic — Redis-cached, parallel, upsert-based
  */
 
 const cartRepository = require('../repositories/cart.repository');
 const menuRepository = require('../repositories/menu.repository');
 const couponRepository = require('../repositories/coupon.repository');
 const ApiError = require('../utils/ApiError');
-const logger = require('../utils/logger');
+const { cacheGet, cacheSet, cacheDel } = require('../config/redis');
+const logger = require('../config/logger');
+
+const CART_TTL = 120; // seconds — short TTL so stale data risk is low
+
+const cartKey = (userId) => `cart:v2:${userId}`;
 
 class CartService {
+    // ─── Cache Helpers ──────────────────────────────────────────
+
+    async _getCartFromCache(userId) {
+        try {
+            return await cacheGet(cartKey(userId));
+        } catch {
+            return null;
+        }
+    }
+
+    async _setCartCache(userId, cart) {
+        try {
+            await cacheSet(cartKey(userId), cart, CART_TTL);
+        } catch {
+            // Non-fatal — DB is source of truth
+        }
+    }
+
+    async _invalidateCart(userId) {
+        try {
+            await cacheDel(cartKey(userId));
+        } catch {
+            // Non-fatal
+        }
+    }
+
+    // ─── Public API ─────────────────────────────────────────────
+
     /**
-     * Get all cart items with complete calculations
-     * @param {string} userId
-     * @returns {Promise<Object>}
+     * Get cart with totals — Redis-first, then DB
      */
     async getCart(userId) {
-        const cartItems = await cartRepository.findByUserId(userId);
-        const userInfo = await cartRepository.getUserCartInfo(userId);
-        const activeCoupon = userInfo.activeCoupon;
+        const cached = await this._getCartFromCache(userId);
+        if (cached) {
+            return cached;
+        }
+        const cart = await this._buildCartFromDB(userId);
+        await this._setCartCache(userId, cart);
+        return cart;
+    }
+
+    /**
+     * Add item to cart
+     * Optimized: parallel fetch of menuItem + existing cart, upsert in single query
+     */
+    async addItemToCart(userId, itemData) {
+        const { menuItemId, quantity, customizations, clearIfDifferentRestaurant } = itemData;
+
+        // 1. Fetch menuItem and existing cart IN PARALLEL — saves one full DB round-trip
+        const [menuItem, existingItems] = await Promise.all([
+            menuRepository.findByIdForCart(menuItemId),
+            cartRepository.findByUserId(userId),
+        ]);
+
+        if (!menuItem) throw new ApiError(404, 'Menu item not found');
+        if (!menuItem.isAvailable) throw new ApiError(400, 'This item is currently unavailable');
+
+        // 2. Restaurant lock check
+        if (existingItems.length > 0) {
+            const currentRestaurantId = existingItems[0].menuItem.restaurantId;
+            if (currentRestaurantId !== menuItem.restaurantId) {
+                if (!clearIfDifferentRestaurant) {
+                    throw new ApiError(400, 'Cart already contains items from another restaurant', {
+                        type: 'RESTAURANT_CONFLICT',
+                        currentRestaurant: existingItems[0].menuItem.restaurant.name,
+                    });
+                }
+                // Clear cart + coupon in parallel
+                await Promise.all([
+                    cartRepository.clearCart(userId),
+                    cartRepository.clearCoupon(userId),
+                ]);
+            }
+        }
+
+        // 3. Upsert (increments qty if already in cart, creates otherwise) — 1 round-trip
+        await cartRepository.upsertItem({
+            userId,
+            menuItemId,
+            quantity,
+            customizations: customizations || {},
+            priceAtAddition: menuItem.discountedPrice ?? menuItem.price,
+        });
+
+        // 4. Invalidate cache THEN rebuild — client gets fresh data
+        await this._invalidateCart(userId);
+        const cart = await this.getCart(userId);
+        return cart;
+    }
+
+    /**
+     * Update cart item quantity
+     */
+    async updateItemQuantity(userId, itemId, quantity) {
+        const item = await cartRepository.findItemById(itemId);
+        if (!item) throw new ApiError(404, 'Cart item not found');
+        if (item.userId !== userId) throw new ApiError(403, 'Forbidden');
+
+        if (quantity <= 0) {
+            await cartRepository.deleteItem(itemId);
+        } else {
+            await cartRepository.updateItem(itemId, { quantity });
+        }
+
+        await this._invalidateCart(userId);
+        return this.getCart(userId);
+    }
+
+    /**
+     * Remove item from cart
+     */
+    async removeItemFromCart(userId, itemId) {
+        const item = await cartRepository.findItemById(itemId);
+        if (!item) throw new ApiError(404, 'Cart item not found');
+        if (item.userId !== userId) throw new ApiError(403, 'Forbidden');
+
+        await cartRepository.deleteItem(itemId);
+        await this._invalidateCart(userId);
+        return this.getCart(userId);
+    }
+
+    /**
+     * Clear entire cart
+     */
+    async clearCart(userId) {
+        await Promise.all([
+            cartRepository.clearCart(userId),
+            cartRepository.clearCoupon(userId),
+            this._invalidateCart(userId),
+        ]);
+        return { message: 'Cart cleared' };
+    }
+
+    /**
+     * Apply a coupon to the cart
+     */
+    async applyCoupon(userId, code) {
+        const coupon = await couponRepository.findByCode(code.toUpperCase());
+        if (!coupon) throw new ApiError(400, 'Invalid or expired coupon code');
+
+        const now = new Date();
+        if (now < coupon.validFrom || now > coupon.validUntil) {
+            throw new ApiError(400, 'Coupon is not active at this time');
+        }
+        if (coupon.usageLimit && coupon.totalUsed >= coupon.usageLimit) {
+            throw new ApiError(400, 'Coupon usage limit reached');
+        }
+
+        const [userUsageCount, { totals, restaurant }] = await Promise.all([
+            couponRepository.getUsageCount(userId, coupon.id),
+            this.getCart(userId),
+        ]);
+
+        if (userUsageCount >= coupon.usageLimitPerUser) {
+            throw new ApiError(400, 'You have already used this coupon');
+        }
+        if (totals.subtotal === 0) {
+            throw new ApiError(400, 'Cannot apply coupon to an empty cart');
+        }
+        if (coupon.applicableRestaurantId && coupon.applicableRestaurantId !== restaurant?.id) {
+            throw new ApiError(400, 'This coupon is not applicable for this restaurant');
+        }
+        if (Number(totals.subtotal) < Number(coupon.minimumOrderAmount)) {
+            throw new ApiError(400, `Minimum order of ${coupon.minimumOrderAmount} required for this coupon`);
+        }
+
+        await cartRepository.updateActiveCoupon(userId, coupon.id);
+        await this._invalidateCart(userId);
+        return this.getCart(userId);
+    }
+
+    /**
+     * Validate cart before checkout
+     */
+    async validateCart(userId) {
+        const cart = await this.getCart(userId);
+        const issues = [];
+
+        if (cart.items.length === 0) return { valid: false, issues: ['Cart is empty'] };
+
+        const restaurant = cart.items[0].menuItem.restaurant;
+        if (!restaurant.isOpen) issues.push(`Restaurant "${restaurant.name}" is currently closed`);
+        if (Number(cart.totals.subtotal) < Number(restaurant.minimumOrderAmount)) {
+            issues.push(`Minimum order amount of ${restaurant.minimumOrderAmount} not met`);
+        }
+
+        // Parallel availability re-check for all items
+        const currentItems = await Promise.all(
+            cart.items.map((item) => menuRepository.findByIdForCart(item.menuItemId))
+        );
+
+        cart.items.forEach((item, i) => {
+            const current = currentItems[i];
+            if (!current || !current.isAvailable) {
+                issues.push(`Item "${item.menuItem.name}" is no longer available`);
+                return;
+            }
+            const oldPrice = Number(item.priceAtAddition || item.menuItem.price);
+            const newPrice = Number(current.price);
+            if (Math.abs(newPrice - oldPrice) / oldPrice > 0.1) {
+                issues.push(`Price for "${item.menuItem.name}" has changed from ${oldPrice} to ${newPrice}`);
+            }
+        });
+
+        return { valid: issues.length === 0, issues };
+    }
+
+    // ─── Private Helpers ────────────────────────────────────────
+
+    async _buildCartFromDB(userId) {
+        const { cartItems, activeCoupon } = await cartRepository.findByUserIdWithCoupon(userId);
 
         if (cartItems.length === 0) {
             return {
                 items: [],
                 restaurant: null,
-                totals: {
-                    subtotal: 0,
-                    deliveryFee: 0,
-                    tax: 0,
-                    discount: 0,
-                    total: 0,
-                },
+                totals: { subtotal: 0, deliveryFee: 0, tax: 0, discount: 0, total: 0 },
                 appliedCoupon: null,
             };
         }
 
-        // Since restaurant locking is enforced, all items belong to the same restaurant
         const restaurant = cartItems[0].menuItem.restaurant;
-
         const totals = this.calculateTotals(cartItems, restaurant, activeCoupon);
 
         return {
@@ -51,272 +250,23 @@ class CartService {
                 minimumOrderAmount: restaurant.minimumOrderAmount,
             },
             totals,
-            appliedCoupon: activeCoupon ? {
-                id: activeCoupon.id,
-                code: activeCoupon.code,
-                description: activeCoupon.description,
-            } : null,
+            appliedCoupon: activeCoupon
+                ? { id: activeCoupon.id, code: activeCoupon.code, description: activeCoupon.description }
+                : null,
         };
     }
 
     /**
-     * Add item to cart
-     * @param {string} userId
-     * @param {Object} itemData
-     * @returns {Promise<Object>}
-     */
-    async addItemToCart(userId, itemData) {
-        const start = Date.now();
-        console.log(`[PERF] addItemToCart started for user ${userId}`);
-
-        const { menuItemId, quantity, customizations, clearIfDifferentRestaurant } = itemData;
-
-        const menuItemStart = Date.now();
-        const menuItem = await menuRepository.findById(menuItemId);
-        console.log(`[PERF] menuRepository.findById took ${Date.now() - menuItemStart}ms`);
-
-        if (!menuItem) {
-            throw new ApiError(404, 'Menu item not found');
-        }
-
-        if (!menuItem.isAvailable) {
-            throw new ApiError(400, 'This item is currently unavailable');
-        }
-
-        // Check restaurant locking
-        const findExistingStart = Date.now();
-        const existingItems = await cartRepository.findByUserId(userId);
-        console.log(`[PERF] cartRepository.findByUserId took ${Date.now() - findExistingStart}ms`);
-
-        if (existingItems.length > 0) {
-            const firstItemRestaurantId = existingItems[0].menuItem.restaurantId;
-            if (firstItemRestaurantId !== menuItem.restaurantId) {
-                if (!clearIfDifferentRestaurant) {
-                    throw new ApiError(400, 'Cart already contains items from another restaurant', {
-                        type: 'RESTAURANT_CONFLICT',
-                        currentRestaurant: existingItems[0].menuItem.restaurant.name,
-                    });
-                }
-                // Clear cart for this user
-                const clearCartStart = Date.now();
-                await cartRepository.clearCart(userId);
-                await cartRepository.clearCoupon(userId);
-                console.log(`[PERF] clearCart/clearCoupon took ${Date.now() - clearCartStart}ms`);
-            }
-        }
-
-        // Check if item already exists in cart
-        const existingItem = existingItems.find(item => item.menuItemId === menuItemId);
-
-        if (existingItem) {
-            // Update quantity
-            const updateItemStart = Date.now();
-            await cartRepository.updateItem(existingItem.id, {
-                quantity: existingItem.quantity + quantity,
-                priceAtAddition: menuItem.price, // Refresh price
-            });
-            console.log(`[PERF] cartRepository.updateItem took ${Date.now() - updateItemStart}ms`);
-        } else {
-            // Add new item
-            const addItemStart = Date.now();
-            await cartRepository.addItem({
-                userId,
-                menuItemId,
-                quantity,
-                customizations: customizations || {},
-                priceAtAddition: menuItem.price, // Lock current price
-            });
-            console.log(`[PERF] cartRepository.addItem took ${Date.now() - addItemStart}ms`);
-        }
-
-        const getCartStart = Date.now();
-        const result = await this.getCart(userId);
-        console.log(`[PERF] this.getCart took ${Date.now() - getCartStart}ms`);
-
-        console.log(`[PERF] addItemToCart total took ${Date.now() - start}ms`);
-        return result;
-    }
-
-    /**
-     * Update cart item quantity
-     * @param {string} userId
-     * @param {string} itemId
-     * @param {number} quantity
-     * @returns {Promise<Object>}
-     */
-    async updateItemQuantity(userId, itemId, quantity) {
-        const item = await cartRepository.findItemById(itemId);
-        if (!item) {
-            throw new ApiError(404, 'Cart item not found');
-        }
-
-        if (item.userId !== userId) {
-            throw new ApiError(403, 'Forbidden: This cart entry does not belong to you');
-        }
-
-        if (quantity <= 0) {
-            await cartRepository.deleteItem(itemId);
-        } else {
-            await cartRepository.updateItem(itemId, { quantity });
-        }
-
-        return this.getCart(userId);
-    }
-
-    /**
-     * Remove item from cart
-     * @param {string} userId
-     * @param {string} itemId
-     * @returns {Promise<Object>}
-     */
-    async removeItemFromCart(userId, itemId) {
-        const item = await cartRepository.findItemById(itemId);
-        if (!item) {
-            throw new ApiError(404, 'Cart item not found');
-        }
-
-        if (item.userId !== userId) {
-            throw new ApiError(403, 'Forbidden');
-        }
-
-        await cartRepository.deleteItem(itemId);
-
-        // Get current cart - clearCoupon will be handled after re-calculating if needed
-        // But usually we just keep the coupon if it still works.
-        // The requirement says: "If cart empty, clear restaurant lock".
-        // This happens naturally by the logic in getCart (null restaurant).
-
-        return this.getCart(userId);
-    }
-
-    /**
-     * Clear entire cart
-     * @param {string} userId
-     * @returns {Promise<Object>}
-     */
-    async clearCart(userId) {
-        await cartRepository.clearCart(userId);
-        await cartRepository.clearCoupon(userId);
-        return { message: "Cart cleared" };
-    }
-
-    /**
-     * Apply a coupon to the cart
-     * @param {string} userId
-     * @param {string} code
-     * @returns {Promise<Object>}
-     */
-    async applyCoupon(userId, code) {
-        const coupon = await couponRepository.findByCode(code.toUpperCase());
-        if (!coupon) {
-            throw new ApiError(400, 'Invalid or expired coupon code');
-        }
-
-        // Check validity dates
-        const now = new Date();
-        if (now < coupon.validFrom || now > coupon.validUntil) {
-            throw new ApiError(400, 'Coupon is not active at this time');
-        }
-
-        // Check usage limits
-        if (coupon.usageLimit && coupon.totalUsed >= coupon.usageLimit) {
-            throw new ApiError(400, 'Coupon usage limit reached');
-        }
-
-        // Check per-user usage limits
-        const userUsageCount = await couponRepository.getUsageCount(userId, coupon.id);
-        if (userUsageCount >= coupon.usageLimitPerUser) {
-            throw new ApiError(400, 'You have already used this coupon');
-        }
-
-        const { totals, restaurant } = await this.getCart(userId);
-        if (totals.subtotal === 0) {
-            throw new ApiError(400, 'Cannot apply coupon to an empty cart');
-        }
-
-        // Check restaurant specific coupon
-        if (coupon.applicableRestaurantId && coupon.applicableRestaurantId !== restaurant.id) {
-            throw new ApiError(400, 'This coupon is not applicable for this restaurant');
-        }
-
-        // Check minimum order amount
-        if (Number(totals.subtotal) < Number(coupon.minimumOrderAmount)) {
-            throw new ApiError(400, `Minimum order of ${coupon.minimumOrderAmount} required for this coupon`);
-        }
-
-        await cartRepository.updateActiveCoupon(userId, coupon.id);
-
-        return this.getCart(userId);
-    }
-
-    /**
-     * Validate cart before checkout
-     * @param {string} userId
-     * @returns {Promise<Object>}
-     */
-    async validateCart(userId) {
-        const cart = await this.getCart(userId);
-        const issues = [];
-
-        if (cart.items.length === 0) {
-            issues.push('Cart is empty');
-            return { valid: false, issues };
-        }
-
-        const restaurant = cart.items[0].menuItem.restaurant;
-
-        // Check if restaurant is open
-        if (!restaurant.isOpen) {
-            issues.push(`Restaurant "${restaurant.name}" is currently closed`);
-        }
-
-        // Check minimum order amount
-        if (Number(cart.totals.subtotal) < Number(restaurant.minimumOrderAmount)) {
-            issues.push(`Minimum order amount of ${restaurant.minimumOrderAmount} not met`);
-        }
-
-        // Check each item
-        for (const item of cart.items) {
-            // Re-fetch current menu item to get latest price and availability
-            const currentItem = await menuRepository.findById(item.menuItemId);
-
-            if (!currentItem.isAvailable) {
-                issues.push(`Item "${item.menuItem.name}" is no longer available`);
-                continue;
-            }
-
-            // Check price change significantly (e.g. > 10%)
-            const oldPrice = Number(item.priceAtAddition || item.menuItem.price);
-            const newPrice = Number(currentItem.price);
-
-            if (Math.abs(newPrice - oldPrice) / oldPrice > 0.1) {
-                issues.push(`Price for "${item.menuItem.name}" has changed from ${oldPrice} to ${newPrice}`);
-            }
-        }
-
-        // Check coupon still valid if exists
-        if (cart.appliedCoupon) {
-            // Similar logic as applyCoupon but without throwing errors
-            // ... (can be simplified if we just want a valid true/false)
-        }
-
-        return {
-            valid: issues.length === 0,
-            issues,
-        };
-    }
-
-    /**
-     * Internal helper for calculating cart totals
+     * Calculate cart totals
      */
     calculateTotals(items, restaurant, coupon) {
         let subtotal = 0;
-        items.forEach(item => {
+        items.forEach((item) => {
             subtotal += Number(item.priceAtAddition || item.menuItem.price) * item.quantity;
         });
 
         const deliveryFee = Number(restaurant.deliveryFee);
-        const tax = subtotal * 0.05; // 5% tax
+        const tax = subtotal * 0.05;
         let discount = 0;
 
         if (coupon) {
@@ -336,9 +286,7 @@ class CartService {
                 default:
                     discount = 0;
             }
-
-            // Discount cannot exceed subtotal (unless it's free delivery)
-            if (coupon.type !== 'FREE_DELIVERY' && discount > (subtotal + tax)) {
+            if (coupon.type !== 'FREE_DELIVERY' && discount > subtotal + tax) {
                 discount = subtotal + tax;
             }
         }

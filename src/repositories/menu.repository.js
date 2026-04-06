@@ -62,7 +62,7 @@ class MenuRepository {
   }
 
   /**
-     * Find menu item by ID
+     * Find menu item by ID — full details (for admin/owner)
      */
   async findById(id) {
     return prisma.menuItem.findUnique({
@@ -77,6 +77,24 @@ class MenuRepository {
           },
         },
         category: true,
+      },
+    });
+  }
+
+  /**
+     * Find menu item by ID — lean select for cart operations
+     * No category join, only fields needed to validate & price items
+     */
+  async findByIdForCart(id) {
+    return prisma.menuItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discountedPrice: true,
+        isAvailable: true,
+        restaurantId: true,
       },
     });
   }
