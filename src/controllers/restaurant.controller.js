@@ -108,6 +108,16 @@ const updateMyRestaurantStatus = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, status, 'Restaurant status updated successfully');
 });
 
+const updateMyRestaurantProfile = asyncHandler(async (req, res) => {
+  const restaurant = await restaurantService.updateRestaurantProfile(req.user.id, req.body, req.files);
+
+  // Invalidate cache
+  await cacheService.clearRestaurantCache();
+  await cacheService.del(`restaurant:details:${restaurant.id}:*`);
+
+  return ApiResponse.success(res, restaurant, 'Restaurant profile updated successfully');
+});
+
 const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!req.files || req.files.length === 0) {
@@ -141,4 +151,5 @@ module.exports = {
   searchRestaurants,
   getRestaurantProfile,
   updateMyRestaurantStatus,
+  updateMyRestaurantProfile,
 };

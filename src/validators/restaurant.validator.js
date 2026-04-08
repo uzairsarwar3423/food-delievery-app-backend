@@ -40,6 +40,10 @@ const createRestaurant = [
   body('minimumOrderAmount').optional().isFloat({ min: 0 }).withMessage('Valid minimum order amount is required'),
   body('deliveryFee').optional().isFloat({ min: 0 }).withMessage('Valid delivery fee is required'),
   body('priceRange').optional().isInt({ min: 1, max: 4 }).withMessage('Price range must be between 1 and 4'),
+  body('businessHours').optional().isObject().withMessage('Business hours must be an object'),
+  body('holidays').optional().isArray().withMessage('Holidays must be an array'),
+  body('taxSettings').optional().isObject().withMessage('Tax settings must be an object'),
+  body('paymentMethods').optional().isArray().withMessage('Payment methods must be an array'),
 ];
 
 const updateRestaurant = [
@@ -58,6 +62,10 @@ const updateRestaurant = [
   body('minimumOrderAmount').optional().isFloat({ min: 0 }),
   body('deliveryFee').optional().isFloat({ min: 0 }),
   body('priceRange').optional().isInt({ min: 1, max: 4 }),
+  body('businessHours').optional().isObject(),
+  body('holidays').optional().isArray(),
+  body('taxSettings').optional().isObject(),
+  body('paymentMethods').optional().isArray(),
 ];
 
 const searchRestaurants = [

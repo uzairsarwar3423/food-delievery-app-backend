@@ -125,6 +125,10 @@ model Restaurant {
   priceRange           Int              @default(1) @map("price_range")
   cuisineTypes         String[]         @map("cuisine_types")
   tags                 String[]
+  businessHours        Json?            @map("business_hours")
+  holidays             Json?            @map("holidays")
+  taxSettings          Json?            @map("tax_settings")
+  paymentMethods       String[]         @default(["CASH"]) @map("payment_methods")
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @updatedAt @map("updated_at")
   favorites            Favorite[]

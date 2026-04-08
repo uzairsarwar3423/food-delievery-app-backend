@@ -428,6 +428,19 @@ class RestaurantService {
   }
 
   /**
+     * Update restaurant profile for owner
+     */
+  async updateRestaurantProfile(ownerId, updateData, files = {}) {
+    const restaurant = await restaurantRepository.findByOwnerId(ownerId);
+    if (!restaurant) {
+      throw new ApiError(404, 'Restaurant not found for this user');
+    }
+
+    // Reuse updateRestaurant logic
+    return this.updateRestaurant(restaurant.id, ownerId, updateData, files, false);
+  }
+
+  /**
      * Delete restaurant
      */
   async deleteRestaurant(id, ownerId, isAdmin = false) {

@@ -42,6 +42,17 @@ router.get('/profile',
   restaurantController.getRestaurantProfile,
 );
 
+router.put('/profile',
+  authenticate,
+  authorize('RESTAURANT_OWNER'),
+  upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
+  ]),
+  validate(restaurantValidator.updateRestaurant),
+  restaurantController.updateMyRestaurantProfile,
+);
+
 router.put('/status',
   authenticate,
   authorize('RESTAURANT_OWNER'),
