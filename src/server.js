@@ -2,7 +2,12 @@
 // src/server.js — HTTP + Socket.io Server Entry Point
 // =============================================================
 
-require('dotenv').config();
+const dotenv = require('dotenv');
+const result = dotenv.config();
+if (result.error) {
+  // We don't exit because env vars might be passed directly by Docker
+  console.warn('⚠️  .env file not found. Relying on system environment variables.');
+}
 
 const http = require('http');
 const { Server: SocketServer } = require('socket.io');
