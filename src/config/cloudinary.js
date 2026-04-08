@@ -8,6 +8,18 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const logger = require('./logger');
 
+// Validate required environment variables
+const missingVars = [];
+if (!process.env.CLOUDINARY_CLOUD_NAME) missingVars.push('CLOUDINARY_CLOUD_NAME');
+if (!process.env.CLOUDINARY_API_KEY) missingVars.push('CLOUDINARY_API_KEY');
+if (!process.env.CLOUDINARY_API_SECRET) missingVars.push('CLOUDINARY_API_SECRET');
+
+if (missingVars.length > 0) {
+  logger.error(`❌ Cloudinary configuration missing: ${missingVars.join(', ')}`);
+} else {
+  logger.info('✅ Cloudinary configuration loaded');
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,

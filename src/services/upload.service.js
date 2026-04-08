@@ -16,6 +16,11 @@ class UploadService {
      */
   async uploadImage(filePath, folder = 'users/avatars') {
     try {
+      // Basic configuration check
+      if (!process.env.CLOUDINARY_API_KEY) {
+        throw new Error('Cloudinary API Key is not configured. Please check your environment variables.');
+      }
+
       const result = await cloudinary.uploader.upload(filePath, {
         folder: `${process.env.CLOUDINARY_FOLDER || 'food-delivery'}/${folder}`,
         use_filename: true,
