@@ -19,19 +19,24 @@ const createRestaurant = [
   body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude is required'),
   body('cuisineTypes')
     .customSanitizer((value) => {
+      let parsed = value;
       if (typeof value === 'string') {
         // Handle JSON stringified array
         if (value.startsWith('[') && value.endsWith(']')) {
           try {
-            return JSON.parse(value);
+            parsed = JSON.parse(value);
           } catch (e) {
-            return [value];
+            parsed = [value];
           }
+        } else {
+          // Handle single string (standard multipart/form-data with 1 item)
+          parsed = [value];
         }
-        // Handle single string (standard multipart/form-data with 1 item)
-        return [value];
       }
-      return value;
+      if (Array.isArray(parsed)) {
+        return parsed.flat(Infinity);
+      }
+      return parsed;
     })
     .isArray()
     .withMessage('Cuisine types must be an array'),
@@ -56,7 +61,27 @@ const updateRestaurant = [
   body('state').optional().trim().notEmpty(),
   body('latitude').optional().isFloat({ min: -90, max: 90 }),
   body('longitude').optional().isFloat({ min: -180, max: 180 }),
-  body('cuisineTypes').optional().isArray(),
+  body('cuisineTypes')
+    .optional()
+    .customSanitizer((value) => {
+      let parsed = value;
+      if (typeof value === 'string') {
+        if (value.startsWith('[') && value.endsWith(']')) {
+          try {
+            parsed = JSON.parse(value);
+          } catch (e) {
+            parsed = [value];
+          }
+        } else {
+          parsed = [value];
+        }
+      }
+      if (Array.isArray(parsed)) {
+        return parsed.flat(Infinity);
+      }
+      return parsed;
+    })
+    .isArray(),
   body('estimatedDeliveryMin').optional().isInt({ min: 1 }),
   body('estimatedDeliveryMax').optional().isInt({ min: 1 }),
   body('minimumOrderAmount').optional().isFloat({ min: 0 }),
