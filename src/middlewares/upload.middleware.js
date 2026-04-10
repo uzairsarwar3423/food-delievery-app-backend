@@ -26,11 +26,18 @@ const storage = multer.diskStorage({
 
 // File Filter
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'text/csv', 'application/vnd.ms-excel'];
+  const allowedTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'text/csv',
+    'application/vnd.ms-excel'
+  ];
   if (allowedTypes.includes(file.mimetype) || file.originalname.endsWith('.csv')) {
     cb(null, true);
   } else {
-    cb(new ApiError(400, 'Invalid file type. Only JPG, JPEG, PNG, and CSV are allowed.'), false);
+    cb(new ApiError(400, 'Invalid file type. Only JPG, JPEG, PNG, WEBP, and CSV are allowed.'), false);
   }
 };
 
