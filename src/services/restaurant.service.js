@@ -376,6 +376,13 @@ class RestaurantService {
 
     const data = { ...updateData };
 
+    // Strip frontend-only file descriptor fields — Prisma has no `logo`/`banner` columns.
+    // Actual file uploads are handled below via `files` (multer). If the frontend sends
+    // logo/banner as objects (e.g. { path, relativePath }), they must be removed here to
+    // prevent an invalid Prisma invocation error.
+    delete data.logo;
+    delete data.banner;
+
     // Type conversions if present
     if (data.latitude) { data.latitude = parseFloat(data.latitude); }
     if (data.longitude) { data.longitude = parseFloat(data.longitude); }
