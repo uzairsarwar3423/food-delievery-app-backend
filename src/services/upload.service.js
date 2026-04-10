@@ -29,14 +29,20 @@ class UploadService {
         resource_type: 'image',
       });
 
-      // Delete local file after upload
-      fs.unlinkSync(filePath);
+      // Delete local file after upload if it's a local file path
+      if (typeof filePath === 'string' && !filePath.startsWith('http') && !filePath.startsWith('data:')) {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
 
       return result;
     } catch (error) {
       // Delete local file even if upload fails
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      if (typeof filePath === 'string' && !filePath.startsWith('http') && !filePath.startsWith('data:')) {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
       logger.error('Cloudinary Upload Error Details:', error);
       throw new ApiError(500, `Failed to upload image to Cloudinary: ${error.message || JSON.stringify(error) || 'Unknown error'}`);

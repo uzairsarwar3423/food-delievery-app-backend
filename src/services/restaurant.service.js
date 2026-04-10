@@ -343,11 +343,29 @@ class RestaurantService {
     if (files.logo) {
       const result = await uploadService.uploadImage(files.logo[0].path, 'restaurants/logos');
       data.logoUrl = result.secure_url;
+    } else if (data.logo && typeof data.logo === 'string') {
+      if (data.logo.startsWith('data:image')) {
+        const result = await uploadService.uploadImage(data.logo, 'restaurants/logos');
+        data.logoUrl = result.secure_url;
+      } else if (data.logo.startsWith('http')) {
+        data.logoUrl = data.logo;
+      }
     }
+
     if (files.banner) {
       const result = await uploadService.uploadImage(files.banner[0].path, 'restaurants/banners');
       data.coverImageUrl = result.secure_url;
+    } else if (data.banner && typeof data.banner === 'string') {
+      if (data.banner.startsWith('data:image')) {
+        const result = await uploadService.uploadImage(data.banner, 'restaurants/banners');
+        data.coverImageUrl = result.secure_url;
+      } else if (data.banner.startsWith('http')) {
+        data.coverImageUrl = data.banner;
+      }
     }
+
+    delete data.logo;
+    delete data.banner;
 
     const restaurant = await restaurantRepository.create(data);
 
@@ -376,6 +394,26 @@ class RestaurantService {
 
     const data = { ...updateData };
 
+    // Handle base64 images or String URLs passed in req.body.
+    // If frontend sends JSON with data URIs instead of FormData, process them.
+    if (!files.logo && data.logo && typeof data.logo === 'string') {
+      if (data.logo.startsWith('data:image')) {
+        const result = await uploadService.uploadImage(data.logo, 'restaurants/logos');
+        data.logoUrl = result.secure_url;
+      } else if (data.logo.startsWith('http')) {
+        data.logoUrl = data.logo;
+      }
+    }
+
+    if (!files.banner && data.banner && typeof data.banner === 'string') {
+      if (data.banner.startsWith('data:image')) {
+        const result = await uploadService.uploadImage(data.banner, 'restaurants/banners');
+        data.coverImageUrl = result.secure_url;
+      } else if (data.banner.startsWith('http')) {
+        data.coverImageUrl = data.banner;
+      }
+    }
+
     // Strip frontend-only file descriptor fields — Prisma has no `logo`/`banner` columns.
     // Actual file uploads are handled below via `files` (multer). If the frontend sends
     // logo/banner as objects (e.g. { path, relativePath }), they must be removed here to
@@ -393,8 +431,12 @@ class RestaurantService {
     if (data.estimatedDeliveryMax) { data.estimatedDeliveryMax = parseInt(data.estimatedDeliveryMax, 10); }
     if (data.priceRange) { data.priceRange = parseInt(data.priceRange, 10); }
 
-    if (data.cuisineTypes && !Array.isArray(data.cuisineTypes)) {
-      data.cuisineTypes = [data.cuisineTypes];
+    if (data.cuisineTypes) {
+      if (!Array.isArray(data.cuisineTypes)) {
+        data.cuisineTypes = [data.cuisineTypes];
+      }
+      // Flatten to prevent nesting and filter empty values
+      data.cuisineTypes = [...new Set(data.cuisineTypes.flat(Infinity).filter(Boolean).map(t => String(t).trim()))];
     }
 
     // Handle logo/banner updates
