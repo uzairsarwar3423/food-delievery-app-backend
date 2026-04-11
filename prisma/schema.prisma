@@ -136,6 +136,7 @@ model Restaurant {
   orders               Order[]
   owner                User             @relation("OwnerRestaurants", fields: [ownerId], references: [id])
   reviews              Review[]
+  riders               DeliveryPerson[]
 
   @@index([ownerId])
   @@index([status, isOpen, isFeatured, averageRating(sort: Desc)])
@@ -349,6 +350,8 @@ model DeliveryPerson {
   lastLocationUpdate DateTime?            @map("last_location_update")
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
+  restaurantId       String?              @map("restaurant_id") @db.Uuid
+  restaurant         Restaurant?          @relation(fields: [restaurantId], references: [id])
   user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders             Order[]
   documents          RiderDocument[]

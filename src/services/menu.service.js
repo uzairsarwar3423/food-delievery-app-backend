@@ -141,23 +141,52 @@ class MenuService {
             throw new ApiError(403, 'Not authorized to update this menu item');
         }
 
-        const updateData = { ...data };
+        const updateData = {};
 
-        // Handle type conversions
-        if (updateData.price) { updateData.price = parseFloat(updateData.price); }
-        if (updateData.discountPrice) {
-            updateData.discountedPrice = parseFloat(updateData.discountPrice);
-            delete updateData.discountPrice;
-        }
-        if (updateData.preparationTime) { updateData.preparationTime = parseInt(updateData.preparationTime, 10); }
-        if (updateData.isAvailable !== undefined) { updateData.isAvailable = updateData.isAvailable === 'true' || updateData.isAvailable === true; }
-
-        if (updateData.name && updateData.name !== existingItem.name) {
-            updateData.slug = slugify(updateData.name);
-            const duplicate = await menuRepository.findBySlug(existingItem.restaurantId, updateData.slug);
-            if (duplicate && duplicate.id !== id) {
-                updateData.slug = `${updateData.slug}-${Math.floor(Math.random() * 1000)}`;
+        // Mapping and casting allowed fields
+        if (data.name !== undefined) {
+            updateData.name = data.name;
+            if (data.name !== existingItem.name) {
+                updateData.slug = slugify(data.name);
+                const duplicate = await menuRepository.findBySlug(existingItem.restaurantId, updateData.slug);
+                if (duplicate && duplicate.id !== id) {
+                    updateData.slug = `${updateData.slug}-${Math.floor(Math.random() * 1000)}`;
+                }
             }
+        }
+
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
+
+        if (data.price !== undefined) updateData.price = parseFloat(data.price);
+        if (data.discountPrice !== undefined) {
+            updateData.discountedPrice = parseFloat(data.discountPrice);
+        } else if (data.discountedPrice !== undefined) {
+            updateData.discountedPrice = parseFloat(data.discountedPrice);
+        }
+
+        if (data.preparationTime !== undefined) updateData.preparationTime = parseInt(data.preparationTime, 10);
+        if (data.spiceLevel !== undefined) updateData.spiceLevel = parseInt(data.spiceLevel, 10);
+        if (data.calories !== undefined) updateData.calories = data.calories ? parseInt(data.calories, 10) : null;
+        if (data.sortOrder !== undefined) updateData.sortOrder = parseInt(data.sortOrder, 10);
+
+        if (data.isAvailable !== undefined) updateData.isAvailable = data.isAvailable === 'true' || data.isAvailable === true;
+        if (data.isVegetarian !== undefined) updateData.isVegetarian = data.isVegetarian === 'true' || data.isVegetarian === true;
+        if (data.isVegan !== undefined) updateData.isVegan = data.isVegan === 'true' || data.isVegan === true;
+        if (data.isGlutenFree !== undefined) updateData.isGlutenFree = data.isGlutenFree === 'true' || data.isGlutenFree === true;
+
+        if (data.allergens !== undefined) {
+            updateData.allergens = Array.isArray(data.allergens) ? data.allergens : (data.allergens ? [data.allergens] : []);
+        }
+        if (data.tags !== undefined) {
+            updateData.tags = Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []);
+        }
+
+        if (data.customizations !== undefined) {
+            updateData.customizations = typeof data.customizations === 'string' ? JSON.parse(data.customizations) : data.customizations;
+        }
+        if (data.nutritionInfo !== undefined) {
+            updateData.nutritionInfo = typeof data.nutritionInfo === 'string' ? JSON.parse(data.nutritionInfo) : data.nutritionInfo;
         }
 
         if (file) {

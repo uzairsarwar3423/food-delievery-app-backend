@@ -108,4 +108,23 @@ router.post('/:id/images',
   restaurantController.uploadImages,
 );
 
+// Rider Management (for restaurant owners)
+router.get('/my/riders',
+  authenticate,
+  authorize('RESTAURANT_OWNER'),
+  restaurantController.getMyRiders
+);
+
+router.post('/my/riders',
+  authenticate,
+  authorize('RESTAURANT_OWNER'),
+  restaurantController.registerRider
+);
+
+router.post('/orders/:orderId/assign',
+  authenticate,
+  authorize('RESTAURANT_OWNER'),
+  restaurantController.assignRiderToOrder
+);
+
 module.exports = router;

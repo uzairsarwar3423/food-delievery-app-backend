@@ -187,6 +187,27 @@ class RiderRepository {
     }
 
     /**
+     * Find many riders by restaurantId
+     */
+    async findManyByRestaurant(restaurantId) {
+        return prisma.deliveryPerson.findMany({
+            where: { restaurantId },
+            include: {
+                user: {
+                    select: {
+                        email: true,
+                        phone: true,
+                        firstName: true,
+                        lastName: true,
+                        avatarUrl: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    /**
      * Update document (for admin review)
      */
     async updateDocument(documentId, data) {

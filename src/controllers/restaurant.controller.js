@@ -4,6 +4,8 @@
  */
 
 const restaurantService = require('../services/restaurant.service');
+const riderService = require('../services/rider.service');
+const deliveryService = require('../services/delivery.service');
 const ApiResponse = require('../utils/ApiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
@@ -138,6 +140,25 @@ const getRestaurantProfile = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, restaurant, 'Restaurant profile fetched successfully');
 });
 
+const getMyRiders = asyncHandler(async (req, res) => {
+  const restaurant = await restaurantService.getRestaurantProfile(req.user.id);
+  const riders = await riderService.getRidersByRestaurant(restaurant.id);
+  return ApiResponse.success(res, riders, 'Riders fetched successfully');
+});
+
+const registerRider = asyncHandler(async (req, res) => {
+  const restaurant = await restaurantService.getRestaurantProfile(req.user.id);
+  const result = await riderService.registerRestaurantRider(restaurant.id, req.body);
+  return ApiResponse.created(res, result, 'Rider registered successfully');
+});
+
+const assignRiderToOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { riderId } = req.body;
+  const result = await deliveryService.assignRiderToOrder(req.user.id, orderId, riderId);
+  return ApiResponse.success(res, result, 'Rider assigned to order successfully');
+});
+
 module.exports = {
   getRestaurants,
   getRestaurantById,
@@ -152,4 +173,7 @@ module.exports = {
   getRestaurantProfile,
   updateMyRestaurantStatus,
   updateMyRestaurantProfile,
+  getMyRiders,
+  registerRider,
+  assignRiderToOrder,
 };

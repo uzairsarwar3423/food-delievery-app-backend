@@ -81,10 +81,10 @@ class OrderService {
         // 6. Persistence & Atomicity (Db Transaction)
         const order = await orderRepository.createOrder(orderData, orderItems, paymentMethod, userId);
 
-        // 8. Queue background tasks
+        // 8. Queue background jobs (Fire and Forget - don't block response)
         const user = await userRepository.findById(userId);
-        await addOrderJob('NOTIFY_RESTAURANT', { orderId: order.id, restaurantId });
-        await addOrderJob('SEND_CONFIRMATION_EMAIL', { orderId: order.id, customerEmail: user.email });
+        addOrderJob('NOTIFY_RESTAURANT', { orderId: order.id, restaurantId }).catch(err => logger.error('Job Error:', err));
+        addOrderJob('SEND_CONFIRMATION_EMAIL', { orderId: order.id, customerEmail: user.email }).catch(err => logger.error('Job Error:', err));
 
         // 9. Emit WebSocket events
         orderEvents.emitOrderNew(order);

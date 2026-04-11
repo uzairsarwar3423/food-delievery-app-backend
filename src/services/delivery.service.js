@@ -445,6 +445,87 @@ class DeliveryService {
 
         return issue;
     }
+
+    /**
+     * Restaurant owner assigns a rider to an order
+     */
+    async assignRiderToOrder(ownerUserId, orderId, riderId) {
+        try {
+            // 1. Fetch order and check ownership
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                include: { restaurant: true }
+            });
+
+            if (!order) throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Order not found');
+            if (order.restaurant.ownerId !== ownerUserId) {
+                throw new ApiError(HTTP_STATUS.FORBIDDEN, 'Not authorized to manage this order');
+            }
+
+            // 2. Fetch rider and check they belong to this restaurant
+            const rider = await prisma.deliveryPerson.findUnique({
+                where: { id: riderId },
+                include: { user: true }
+            });
+
+            if (!rider) throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Rider not found');
+            if (rider.restaurantId !== order.restaurantId) {
+                throw new ApiError(HTTP_STATUS.BAD_REQUEST, 'Rider does not belong to this restaurant');
+            }
+
+            // 3. Update order
+            const result = await prisma.$transaction(async (tx) => {
+                // Generate pickup code if not exists
+                const pickupCode = order.verificationCode || generateOTP(6);
+
+                const updatedOrder = await tx.order.update({
+                    where: { id: orderId },
+                    data: {
+                        deliveryPersonId: rider.id,
+                        verificationCode: pickupCode,
+                        status: order.status === ORDER_STATUS.PENDING ? ORDER_STATUS.CONFIRMED : order.status
+                    },
+                    include: {
+                        restaurant: true,
+                        deliveryAddress: true,
+                        customer: {
+                            select: { firstName: true, phone: true }
+                        }
+                    }
+                });
+
+                // Update rider availability (optional, depends on if we want to allow multiple)
+                await tx.deliveryPerson.update({
+                    where: { id: rider.id },
+                    data: { isAvailable: false }
+                });
+
+                return updatedOrder;
+            });
+
+            // 4. Notifications
+            orderEvents.emitOrderStatusChanged(result);
+            orderEvents.emitToAllRooms([`user:${result.customerId}`], 'rider_assigned', {
+                orderId: result.id,
+                rider: {
+                    name: `${rider.user.firstName} ${rider.user.lastName}`,
+                    phone: rider.user.phone,
+                }
+            });
+
+            // Notify Rider
+            orderEvents.emitToAllRooms([`user:${rider.userId}`], 'new_assignment', {
+                orderId: result.id,
+                orderNumber: result.orderNumber,
+                restaurantName: result.restaurant.name
+            });
+
+            return result;
+        } catch (error) {
+            console.error('AssignRiderToOrder Error:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new DeliveryService();

@@ -277,6 +277,26 @@ class RiderService {
             }))
         };
     }
+
+    /**
+     * Get all riders for a specific restaurant
+     */
+    async getRidersByRestaurant(restaurantId) {
+        return riderRepository.findManyByRestaurant(restaurantId);
+    }
+
+    /**
+     * Register a new rider associated with a restaurant
+     */
+    async registerRestaurantRider(restaurantId, registerData) {
+        // Simple wrapper around registerRider that ensures restaurantId is set
+        const result = await this.registerRider({
+            ...registerData,
+            restaurantId
+        });
+
+        return result;
+    }
 }
 
 module.exports = new RiderService();
