@@ -3,6 +3,7 @@
 // =============================================================
 
 const authService = require('../services/auth.service');
+const otpService = require('../services/otp.service');
 const ApiResponse = require('../utils/ApiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
@@ -11,6 +12,56 @@ const ApiError = require('../utils/ApiError');
  * Handle HTTP requests for authentication
  */
 class AuthController {
+  /**
+   * POST /otp/send
+   * Sends a 6-digit OTP to the provided email address.
+   */
+  sendOTP = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    await otpService.sendOTP(email);
+    return ApiResponse.success(res, null, `OTP sent successfully to ${email}`);
+  });
+
+  /**
+   * POST /otp/verify
+   * Verifies the email OTP and logs in / registers the user.
+   */
+  verifyOTP = asyncHandler(async (req, res) => {
+    const { email, code } = req.body;
+    const isValid = await otpService.verifyOTP(email, code);
+
+    if (!isValid) {
+      throw ApiError.badRequest('Invalid or expired OTP');
+    }
+
+    const { user, tokens } = await authService.loginWithEmail(email);
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return ApiResponse.success(res, { user, ...tokens }, 'Logged in successfully via Email OTP');
+  });
+
+  /**
+   * POST /google
+   * Authenticate with Google idToken from frontend
+   */
+  googleLogin = asyncHandler(async (req, res) => {
+    const { idToken } = req.body;
+    const { user, tokens } = await authService.loginWithGoogle(idToken);
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return ApiResponse.success(res, { user, ...tokens }, 'Logged in successfully via Google');
+  });
+
   /**
      * POST /register
      */

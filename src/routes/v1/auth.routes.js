@@ -8,6 +8,9 @@ const validate = require('../../middlewares/validate.middleware');
 const {
   registerValidator,
   loginValidator,
+  sendOtpValidator,
+  verifyOtpValidator,
+  googleLoginValidator,
   verifyEmailValidator,
   resendVerificationValidator,
   forgotPasswordValidator,
@@ -26,6 +29,13 @@ router.post('/register', validate(registerValidator), authController.register);
 router.post('/login', authLimiter, validate(loginValidator), authController.login);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', authController.logout);
+
+/**
+ * Simplified Authentication (Phone OTP & Social)
+ */
+router.post('/otp/send', otpLimiter, validate(sendOtpValidator), authController.sendOTP);
+router.post('/otp/verify', authLimiter, validate(verifyOtpValidator), authController.verifyOTP);
+router.post('/google', authLimiter, validate(googleLoginValidator), authController.googleLogin);
 
 /**
  * Public Email Discovery / Action Routes

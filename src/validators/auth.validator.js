@@ -7,30 +7,30 @@ const { PASSWORD } = require('../utils/constants');
 
 const registerValidator = [
   body('email')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Email is required')
     .isEmail().withMessage('Invalid email format')
     .normalizeEmail(),
 
   body('phone')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Phone number is required')
     .matches(/^\+?[1-9]\d{1,14}$/).withMessage('Invalid phone number format (E.164)'),
 
   body('password')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Password is required')
     .isLength({ min: PASSWORD.MIN_LENGTH }).withMessage(`Password must be at least ${PASSWORD.MIN_LENGTH} characters`)
     .matches(PASSWORD.REGEX).withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 
   body('firstName')
+    .optional()
     .trim()
-    .notEmpty().withMessage('First name is required')
     .isLength({ max: 100 }).withMessage('First name is too long'),
 
   body('lastName')
+    .optional()
     .trim()
-    .notEmpty().withMessage('Last name is required')
     .isLength({ max: 100 }).withMessage('Last name is too long'),
 
   body('role')
@@ -47,6 +47,32 @@ const loginValidator = [
   body('password')
     .trim()
     .notEmpty().withMessage('Password is required'),
+];
+
+const sendOtpValidator = [
+  body('email')
+    .trim()
+    .notEmpty().withMessage('Email is required')
+    .isEmail().withMessage('Invalid email format')
+    .normalizeEmail(),
+];
+
+const verifyOtpValidator = [
+  body('email')
+    .trim()
+    .notEmpty().withMessage('Email is required')
+    .isEmail().withMessage('Invalid email format')
+    .normalizeEmail(),
+  body('code')
+    .trim()
+    .notEmpty().withMessage('OTP code is required')
+    .isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+];
+
+const googleLoginValidator = [
+  body('idToken')
+    .trim()
+    .notEmpty().withMessage('Google ID Token is required'),
 ];
 
 const verifyEmailValidator = [
@@ -120,6 +146,9 @@ const changePasswordValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
+  sendOtpValidator,
+  verifyOtpValidator,
+  googleLoginValidator,
   verifyEmailValidator,
   resendVerificationValidator,
   forgotPasswordValidator,

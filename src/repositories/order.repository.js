@@ -132,6 +132,10 @@ class OrderRepository {
                     select: {
                         id: true,
                         status: true,
+                        vehicleType: true,
+                        vehicleNumber: true,
+                        totalDeliveries: true,
+                        averageRating: true,
                         currentLatitude: true,
                         currentLongitude: true,
                         user: {

@@ -27,6 +27,7 @@ const REDIS_KEYS = Object.freeze({
   EMAIL_VERIFY_TOKEN: 'ev:',                    // ev:<userId>
   PASSWORD_RESET_TOKEN: 'pr:',                  // pr:<token>
   USER_CACHE: 'user:',                          // user:<userId>
+  PHONE_OTP: 'otp:',                            // otp:<phone>
   // Rate limiting prefixes
   RESEND_VERIFY_LIMIT: 'rl:resend_verify:',
   FORGOT_PASS_LIMIT: 'rl:forgot_pass:',
@@ -40,6 +41,7 @@ const TOKEN_TTL = Object.freeze({
   PASSWORD_RESET: 60 * 60,       // 1 hour
   SESSION: 7 * 24 * 60 * 60,     // 7 days
   USER_CACHE: 5 * 60,            // 5 minutes
+  PHONE_OTP: 5 * 60,            // 5 minutes
   BLACKLIST: 7 * 24 * 60 * 60,   // match longest access token life
 });
 

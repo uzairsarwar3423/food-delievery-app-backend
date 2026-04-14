@@ -13,8 +13,11 @@ const {
   decodeToken,
 } = require('../utils/jwt');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/mailer');
-const { REDIS_KEYS, TOKEN_TTL } = require('../utils/constants');
+const { REDIS_KEYS, TOKEN_TTL, ROLES } = require('../utils/constants');
 const crypto = require('crypto');
+
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * Service to handle all core authentication logic
@@ -27,19 +30,23 @@ class AuthService {
     const { email, phone, password, firstName, lastName, role } = userData;
 
     // 1. Check if email exists
-    const existingEmail = await prisma.user.findUnique({ where: { email } });
-    if (existingEmail) {
-      throw ApiError.conflict('Email already registered');
+    if (email) {
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail) {
+        throw ApiError.conflict('Email already registered');
+      }
     }
 
     // 2. Check if phone exists
-    const existingPhone = await prisma.user.findUnique({ where: { phone } });
-    if (existingPhone) {
-      throw ApiError.conflict('Phone number already registered');
+    if (phone) {
+      const existingPhone = await prisma.user.findUnique({ where: { phone } });
+      if (existingPhone) {
+        throw ApiError.conflict('Phone number already registered');
+      }
     }
 
     // 3. Hash password
-    const passwordHash = await hashPassword(password);
+    const passwordHash = password ? await hashPassword(password) : null;
 
     // 4. Create user
     const user = await prisma.user.create({
@@ -52,34 +59,27 @@ class AuthService {
         role: role || 'CUSTOMER',
         isEmailVerified: false,
         isActive: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isEmailVerified: true,
-        createdAt: true,
+        provider: password ? 'LOCAL' : 'PHONE',
       },
     });
 
-    // 5. Generate Verification Token (using crypto for safer storage in Redis)
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    await cacheSet(
-      `${REDIS_KEYS.EMAIL_VERIFY_TOKEN}${verificationToken}`,
-      user.id,
-      TOKEN_TTL.EMAIL_VERIFY,
-    );
+    // 5. Generate Verification Token (only if email is provided)
+    if (email) {
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await cacheSet(
+        `${REDIS_KEYS.EMAIL_VERIFY_TOKEN}${verificationToken}`,
+        user.id,
+        TOKEN_TTL.EMAIL_VERIFY,
+      );
 
-    // 6. Send Verification Email (Async)
-    sendVerificationEmail(user.email, `${user.firstName} ${user.lastName}`, verificationToken);
+      // 6. Send Verification Email (Async)
+      sendVerificationEmail(user.email, `${user.firstName || 'User'} ${user.lastName || ''}`, verificationToken);
+    }
 
     // 7. Generate JWT Tokens
     const tokens = await this.generateAuthTokens(user.id);
 
-    return { user, tokens };
+    return { user: this.excludePassword(user), tokens };
   }
 
   /**
@@ -96,7 +96,7 @@ class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw ApiError.unauthorized('Invalid credentials');
     }
 
@@ -106,33 +106,125 @@ class AuthService {
       throw ApiError.unauthorized('Invalid credentials');
     }
 
-    // 3. Check if active
+    return await this.processLogin(user);
+  }
+
+  /**
+   * Login or Register with Email OTP (OTP already verified).
+   * Since the OTP proves ownership of the email, we mark it as verified.
+   */
+  async loginWithEmail(email) {
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Auto-register new customer — no password needed
+      user = await prisma.user.create({
+        data: {
+          email,
+          role: ROLES.CUSTOMER,
+          provider: 'EMAIL_OTP',
+          isActive: true,
+          isEmailVerified: true, // OTP proves ownership
+        },
+      });
+    } else if (!user.isEmailVerified) {
+      // Mark existing unverified account as verified
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { isEmailVerified: true },
+      });
+    }
+
+    return await this.processLogin(user);
+  }
+
+  /**
+   * Login or Register with Google
+   */
+  async loginWithGoogle(idToken) {
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, given_name: firstName, family_name: lastName, picture: avatarUrl } = payload;
+
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { googleId },
+            { email },
+          ],
+        },
+      });
+
+      if (!user) {
+        // Create new user
+        user = await prisma.user.create({
+          data: {
+            googleId,
+            email,
+            firstName,
+            lastName,
+            avatarUrl,
+            role: ROLES.CUSTOMER,
+            provider: 'GOOGLE',
+            isEmailVerified: true,
+            isActive: true,
+          },
+        });
+      } else if (!user.googleId) {
+        // Link existing account to Google
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId,
+            provider: 'GOOGLE',
+            avatarUrl: user.avatarUrl || avatarUrl,
+          },
+        });
+      }
+
+      return await this.processLogin(user);
+    } catch (error) {
+      throw ApiError.unauthorized('Google authentication failed');
+    }
+  }
+
+  /**
+   * Helper: Common login processing logic
+   */
+  async processLogin(user) {
+    // 1. Check if active
     if (!user.isActive) {
       throw ApiError.forbidden('Your account has been suspended');
     }
 
-    // 4. Update last login
+    // 2. Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
-    // 5. Generate Tokens
+    // 3. Generate Tokens
     const tokens = await this.generateAuthTokens(user.id);
 
-    // 6. Clean user for response
-    const userResponse = {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      isEmailVerified: user.isEmailVerified,
-      avatarUrl: user.avatarUrl,
+    return {
+      user: this.excludePassword(user),
+      tokens,
     };
+  }
 
-    return { user: userResponse, tokens };
+  /**
+   * Helper: Remove sensitive data from user object
+   */
+  excludePassword(user) {
+    const { passwordHash, refreshToken, ...userWithoutSensitive } = user;
+    return userWithoutSensitive;
   }
 
   /**
