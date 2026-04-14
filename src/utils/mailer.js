@@ -13,18 +13,26 @@ let transporter = null;
 const getTransporter = () => {
   if (transporter) {return transporter;}
 
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const config = {
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    tls: {
+  };
+
+  if (smtpHost === 'smtp.gmail.com') {
+    config.service = 'gmail';
+  } else {
+    config.host = smtpHost;
+    config.port = parseInt(process.env.SMTP_PORT, 10) || 587;
+    config.secure = process.env.SMTP_SECURE === 'true';
+    config.tls = {
       rejectUnauthorized: false,
-    },
-  });
+    };
+  }
+
+  transporter = nodemailer.createTransport(config);
 
   return transporter;
 };
@@ -49,7 +57,11 @@ const sendEmail = async ({ to, subject, html, text }) => {
     logger.info(`Email sent to ${to}: ${info.messageId}`);
     return info;
   } catch (err) {
-    logger.error(`Failed to send email to ${to}:`, err.message);
+    logger.error(`Failed to send email to ${to}: ${err.message}`, {
+      stack: err.stack,
+      code: err.code,
+      command: err.command,
+    });
     // Don't throw — email failures should not break auth flows
     // But return null to let caller know
     return null;
