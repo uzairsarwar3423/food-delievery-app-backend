@@ -17,14 +17,6 @@ const getTransporter = () => {
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
 
-  if (!smtpUser || !smtpPass) {
-    logger.error('SMTP credentials missing from environment:', { 
-      hasUser: !!smtpUser, 
-      hasPass: !!smtpPass,
-      host: smtpHost 
-    });
-  }
-
   const config = {
     auth: {
       user: smtpUser,
