@@ -17,6 +17,16 @@ const getTransporter = () => {
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
 
+  if (!smtpUser || !smtpPass) {
+    logger.error('❌ SMTP Credentials missing! Please set SMTP_USER and SMTP_PASS environment variables.');
+    return {
+      sendMail: () => {
+        logger.error('Cannot send email: SMTP credentials are not configured.');
+        return Promise.resolve(null);
+      }
+    };
+  }
+
   const config = {
     auth: {
       user: smtpUser,
