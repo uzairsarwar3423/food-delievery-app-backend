@@ -43,6 +43,9 @@ model User {
   activeCouponId        String?         @map("active_coupon_id") @db.Uuid
   activeCoupon          Coupon?         @relation("UserActiveCoupon", fields: [activeCouponId], references: [id])
   notificationPreferences Json?           @default("{\"email\": true, \"push\": true, \"sms\": true}") @map("notification_preferences")
+  createdCampaigns      Campaign[]      @relation("UserCreatedCampaigns")
+  dealUsages            DealUsage[]
+  dealFavorites         DealFavorite[]
 
   @@index([email])
   @@index([phone])
@@ -139,6 +142,8 @@ model Restaurant {
   owner                User             @relation("OwnerRestaurants", fields: [ownerId], references: [id])
   reviews              Review[]
   riders               DeliveryPerson[]
+  campaigns            Campaign[]
+  deals                Deal[]
 
   @@index([ownerId])
   @@index([status, isOpen, isFeatured, averageRating(sort: Desc)])
@@ -237,6 +242,9 @@ model Order {
   riderEarnings         Decimal         @default(0) @map("rider_earnings") @db.Decimal(10, 2)
   tipAmount             Decimal         @default(0) @map("tip_amount") @db.Decimal(10, 2)
   bonusAmount           Decimal         @default(0) @map("bonus_amount") @db.Decimal(10, 2)
+  dealId                String?         @map("deal_id") @db.Uuid
+  dealDiscount          Decimal         @default(0) @map("deal_discount") @db.Decimal(10, 2)
+  dealName              String?         @map("deal_name") @db.VarChar(200)
   createdAt             DateTime        @default(now()) @map("created_at")
   updatedAt             DateTime        @updatedAt @map("updated_at")
   orderItems            OrderItem[]
@@ -248,6 +256,8 @@ model Order {
   payment               Payment?
   review                Review?
   deliveryIssues        DeliveryIssue[]
+  deal                  Deal?           @relation(fields: [dealId], references: [id])
+  dealUsages            DealUsage[]
 
   @@index([customerId, status, createdAt(sort: Desc)])
   @@index([restaurantId, createdAt(sort: Desc)])
@@ -662,6 +672,109 @@ enum CouponType {
   PERCENTAGE
   FIXED_AMOUNT
   FREE_DELIVERY
+  BOGO
+}
+
+model Campaign {
+  id           String         @id @default(uuid()) @db.Uuid
+  title        String         @db.VarChar(200)
+  description  String?
+  slug         String         @unique @db.VarChar(200)
+  bannerUrl    String?        @map("banner_url") @db.VarChar(500)
+  type         CampaignType   @default(PLATFORM)
+  creatorId    String         @map("creator_id") @db.Uuid
+  restaurantId String?        @map("restaurant_id") @db.Uuid
+  startDate    DateTime       @map("valid_from")
+  endDate      DateTime       @map("valid_until")
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  creator      User           @relation("UserCreatedCampaigns", fields: [creatorId], references: [id])
+  restaurant   Restaurant?    @relation(fields: [restaurantId], references: [id])
+  deals        Deal[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@map("campaigns")
+}
+
+model Deal {
+  id                    String      @id @default(uuid()) @db.Uuid
+  restaurantId          String      @map("restaurant_id") @db.Uuid
+  campaignId            String?     @map("campaign_id") @db.Uuid
+  title                 String      @db.VarChar(200)
+  subtitle              String?     @db.VarChar(200)
+  description           String?
+  type                  CouponType
+  value                 Decimal     @db.Decimal(10, 2)
+  minimumOrderAmount    Decimal     @default(0) @map("minimum_order_amount") @db.Decimal(10, 2)
+  maximumDiscountAmount Decimal?    @map("maximum_discount_amount") @db.Decimal(10, 2)
+  imageUrl              String?     @map("image_url") @db.VarChar(500)
+  gradientColors        Json?       @map("gradient_colors")
+  isActive              Boolean     @default(true) @map("is_active")
+  isFeatured            Boolean     @default(false) @map("is_featured")
+  displayOrder          Int         @default(0) @map("display_order")
+  validFrom             DateTime    @map("valid_from")
+  validUntil            DateTime    @map("valid_until")
+  termsAndConditions    String?     @map("terms_conditions") @db.Text
+  usageLimit            Int?        @map("usage_limit")
+  usageLimitPerUser     Int         @default(1) @map("usage_limit_per_user")
+  applicabilityRules    Json?       @map("applicability_rules")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  restaurant            Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  campaign              Campaign?   @relation(fields: [campaignId], references: [id])
+  usages                DealUsage[]
+  orders                Order[]
+  favoredBy             DealFavorite[]
+
+  @@index([restaurantId])
+  @@index([campaignId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@map("deals")
+}
+
+model DealUsage {
+  id             String   @id @default(uuid()) @db.Uuid
+  dealId         String   @map("deal_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  orderId        String   @map("order_id") @db.Uuid
+  discountAmount Decimal  @map("discount_amount") @db.Decimal(10, 2)
+  usedAt         DateTime @default(now()) @map("used_at")
+
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([dealId, orderId])
+  @@index([dealId])
+  @@index([userId])
+  @@index([orderId])
+  @@map("deal_usage")
+}
+
+model DealFavorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  dealId    String   @map("deal_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dealId])
+  @@index([userId])
+  @@index([dealId])
+  @@map("deal_favorites")
+}
+
+enum CampaignType {
+  PLATFORM
+  RESTAURANT
 }
 
 model SearchHistory {

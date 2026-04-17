@@ -72,6 +72,18 @@ class OrderRepository {
                 });
             }
 
+            // 6. If deal used, create deal usage entry
+            if (orderData.dealId) {
+                await tx.dealUsage.create({
+                    data: {
+                        dealId: orderData.dealId,
+                        userId: userId,
+                        orderId: order.id,
+                        discountAmount: orderData.dealDiscount || 0,
+                    }
+                });
+            }
+
             return order;
         });
     }

@@ -20,6 +20,7 @@ const reviewRoutes = require('./v1/review.routes');
 const notificationRoutes = require('./v1/notification.routes');
 const adminRoutes = require('./v1/admin.routes.js');
 const analyticsRoutes = require('./v1/analytics.routes.js');
+const dealsRoutes = require('./v1/deals.routes');
 
 
 const router = express.Router();
@@ -44,6 +45,7 @@ router.use('/v1', menuRoutes);
 router.use('/v1/notifications', notificationRoutes);
 router.use('/v1/admin', adminRoutes);
 router.use('/v1', analyticsRoutes);
+router.use('/v1/deals', dealsRoutes);
 
 
 module.exports = router;

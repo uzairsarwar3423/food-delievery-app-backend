@@ -12,13 +12,14 @@ const { ORDER_STATUS, EMAIL_TEMPLATES, ROLES } = require('../utils/constants');
 const { addOrderJob } = require('../jobs/orderQueue');
 const orderEvents = require('../websocket/events/order.events');
 const logger = require('../config/logger');
+const dealsService = require('./deals.service');
 
 class OrderService {
     /**
      * Create a new order from a user's current cart
      */
     async createOrder(userId, orderPayload) {
-        const { deliveryAddressId, paymentMethod, specialInstructions, couponCode } = orderPayload;
+        const { deliveryAddressId, paymentMethod, specialInstructions, couponCode, dealId } = orderPayload;
 
         // 1. Fetch current cart and calculations
         const cart = await cartService.getCart(userId);
@@ -46,6 +47,17 @@ class OrderService {
             throw new ApiError(400, 'Specified delivery address is invalid or not found');
         }
 
+        // 3.5 Handle Deal Application
+        let dealDiscount = 0;
+        let appliedDeal = null;
+        if (dealId) {
+            appliedDeal = await dealsService.applyDeal(dealId, {
+                subtotal: cart.totals.subtotal,
+                restaurantId: cart.restaurant.id
+            }, userId);
+            dealDiscount = appliedDeal.discountAmount;
+        }
+
         // 4. Generate Order Number: ORD-YYYYMMDD-XXXX
         const orderNumber = await this._generateOrderNumber();
 
@@ -60,9 +72,12 @@ class OrderService {
             subtotal: cart.totals.subtotal,
             deliveryFee: cart.totals.deliveryFee,
             taxAmount: cart.totals.tax,
-            discountAmount: cart.totals.discount,
-            totalAmount: cart.totals.total,
+            discountAmount: Number(cart.totals.discount) + dealDiscount,
+            totalAmount: Number(cart.totals.total) - dealDiscount,
             couponId: cart.appliedCoupon ? cart.appliedCoupon.id : null,
+            dealId: appliedDeal ? appliedDeal.dealId : null,
+            dealDiscount: dealDiscount,
+            dealName: appliedDeal ? appliedDeal.dealName : null,
             estimatedDeliveryAt: new Date(Date.now() + (restaurant.estimatedDeliveryMin + 15) * 60 * 1000),
         };
 
