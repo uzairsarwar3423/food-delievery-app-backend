@@ -27,7 +27,7 @@ class CacheService {
   }
 
   /**
-     * Delete keys from cache
+     * Delete exact keys from cache (no wildcards)
      * @param {...string} keys
      */
   async del(...keys) {
@@ -35,15 +35,17 @@ class CacheService {
   }
 
   /**
-     * Delete keys by pattern
-     * @param {string} pattern
+     * Delete all keys matching a glob pattern (uses SCAN — non-blocking)
+     * @param {string} pattern e.g. "restaurant:details:abc-123:*"
      */
   async delPattern(pattern) {
     return redisConfig.cacheDelPattern(pattern);
   }
 
   /**
-     * Generate cache key for restaurants search
+     * Generate cache key for a restaurants search/listing query.
+     * Params are sorted so that the same query in different insertion order
+     * always resolves to the same key.
      */
   generateRestaurantKey(params) {
     const sortedParams = Object.keys(params)
@@ -54,7 +56,7 @@ class CacheService {
   }
 
   /**
-     * Generate cache key for menu
+     * Generate cache key for a restaurant's menu.
      */
   generateMenuKey(restaurantId, params = {}) {
     const sortedParams = Object.keys(params)
@@ -65,15 +67,26 @@ class CacheService {
   }
 
   /**
-     * Clear all restaurant related cache
+     * Clear all restaurant listing/search related cache.
+     * Also clears individual restaurant detail keys.
      */
-  async clearRestaurantCache() {
+  async clearRestaurantCache(restaurantId = null) {
+    // Always clear listing/search cache
     await this.delPattern('restaurants:*');
+
+    // If we know the specific restaurant, target it precisely
+    if (restaurantId) {
+      await this.delPattern(`restaurant:details:${restaurantId}*`);
+    } else {
+      // Full wipe — used when listing-wide data changes (e.g. approval status)
+      await this.delPattern('restaurant:details:*');
+    }
+
     logger.info('Restaurant cache cleared');
   }
 
   /**
-     * Clear all menu related cache for a restaurant
+     * Clear all menu related cache for a restaurant (or all restaurants).
      */
   async clearMenuCache(restaurantId) {
     if (restaurantId) {
@@ -85,7 +98,7 @@ class CacheService {
   }
 
   /**
-     * Clear all category related cache
+     * Clear all category related cache.
      */
   async clearCategoryCache() {
     await this.delPattern('categories:*');

@@ -15,6 +15,9 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      - REDIS_QUEUE_DB=1
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USER=fooduser
@@ -63,8 +66,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: food-delivery-redis
-    ports:
-      - "6380:6379" # Host port 6380 to avoid conflict with local redis
+    # No host port mapping — Redis is only reachable within the Docker network.
+    # Use 'docker exec food-delivery-redis redis-cli' to inspect locally.
     volumes:
       - redis_data:/data
     healthcheck:

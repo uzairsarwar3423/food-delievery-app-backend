@@ -9,13 +9,12 @@ const menuController = require('../../controllers/menu.controller');
 const menuValidator = require('../../validators/menu.validator');
 const validate = require('../../middlewares/validate.middleware');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
-const cacheMiddleware = require('../../middlewares/cache.middleware');
 const { upload } = require('../../middlewares/upload.middleware');
 
 // Public routes
+// Caching for GET endpoints is handled inside the service layer.
 // 1. Get restaurant menu
 router.get('/restaurants/:restaurantId/menu',
-  cacheMiddleware(1800), // 30 min
   menuController.getRestaurantMenu,
 );
 

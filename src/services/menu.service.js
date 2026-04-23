@@ -61,14 +61,21 @@ class MenuService {
 
     /**
        * Get menu item by ID
+       * Cached for 1 hour — invalidated on any update/delete/availability change.
        */
     async getMenuItem(id) {
+        const cacheKey = `menu:item:${id}`;
+        const cached = await cacheService.get(cacheKey);
+        if (cached) return cached;
+
         const item = await menuRepository.findById(id);
         if (!item) {
             throw new ApiError(404, 'Menu item not found');
         }
         // Optimize image URL
         item.imageUrl = imageService.getOptimizedUrl(item.imageUrl, { width: 600, height: 600 });
+
+        await cacheService.set(cacheKey, item, 3600); // 1 hour
         return item;
     }
 
@@ -234,8 +241,9 @@ class MenuService {
 
         await menuRepository.delete(id);
 
-        // Clear cache
+        // Clear menu listing cache AND the specific item key
         await cacheService.clearMenuCache(item.restaurantId);
+        await cacheService.del(`menu:item:${id}`);
 
         return { message: 'Menu item deleted successfully' };
     }
@@ -255,8 +263,9 @@ class MenuService {
 
         const updated = await menuRepository.update(id, { isAvailable });
 
-        // Clear cache
+        // Clear menu listing cache AND the specific item key
         await cacheService.clearMenuCache(item.restaurantId);
+        await cacheService.del(`menu:item:${id}`);
 
         // Notify users if becoming unavailable (Offloaded to background)
         if (!isAvailable) {
@@ -325,8 +334,9 @@ class MenuService {
             discountedPrice: discountPrice ? parseFloat(discountPrice) : null,
         });
 
-        // Clear cache
+        // Clear menu listing cache AND the specific item key
         await cacheService.clearMenuCache(item.restaurantId);
+        await cacheService.del(`menu:item:${id}`);
 
         return updated;
     }
@@ -377,8 +387,9 @@ class MenuService {
         const uploadResult = await uploadService.uploadImage(file.path, `restaurants/${item.restaurantId}/menu`);
         const updated = await menuRepository.update(id, { imageUrl: uploadResult.secure_url });
 
-        // Clear cache
+        // Clear menu listing cache AND the specific item key
         await cacheService.clearMenuCache(item.restaurantId);
+        await cacheService.del(`menu:item:${id}`);
 
         return { imageUrl: updated.imageUrl };
     }

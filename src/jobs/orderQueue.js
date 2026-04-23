@@ -9,11 +9,13 @@ const notificationService = require('../services/notification.service');
 // Lazy load repository to avoid potential circular dependencies if any
 const orderRepository = require('../repositories/order.repository');
 
-// Reuse existing Redis connection settings
+// BullMQ requires its own ioredis connection — it cannot share the cache client.
+// REDIS_QUEUE_DB separates queue data from cache data (defaults to DB 1).
 const connection = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT, 10) || 6379,
     password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_QUEUE_DB, 10) || 1,
 };
 
 // 1. Define the Queue
@@ -26,7 +28,9 @@ const orderQueue = new Queue('order-processing', {
             delay: 5000,
         },
         removeOnComplete: true,
-        removeOnFail: false,
+        // Keep the last 500 failed jobs for debugging; anything beyond that is
+        // auto-removed so the list never grows unbounded in Redis.
+        removeOnFail: { count: 500 },
     }
 });
 

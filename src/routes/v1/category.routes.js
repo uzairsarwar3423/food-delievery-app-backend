@@ -9,12 +9,11 @@ const categoryController = require('../../controllers/category.controller');
 const categoryValidator = require('../../validators/category.validator');
 const validate = require('../../middlewares/validate.middleware');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
-const cacheMiddleware = require('../../middlewares/cache.middleware');
 const { upload } = require('../../middlewares/upload.middleware');
 
 // Public routes
+// Caching is handled inside the service layer (TTL: 1 hour, invalidated on any write).
 router.get('/',
-  cacheMiddleware(86400), // 24 hours
   categoryController.getCategories,
 );
 

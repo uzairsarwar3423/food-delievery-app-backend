@@ -369,7 +369,7 @@ class RestaurantService {
 
     const restaurant = await restaurantRepository.create(data);
 
-    // Invalidate cache
+    // Invalidate cache — new restaurant may appear in listings
     await cacheService.clearRestaurantCache();
 
     // TODO: Send notification to admin (logic would go here)
@@ -470,8 +470,8 @@ class RestaurantService {
 
     const updated = await restaurantRepository.update(id, data);
 
-    // Invalidate cache
-    await cacheService.clearRestaurantCache();
+    // Invalidate cache — targeted by restaurant ID
+    await cacheService.clearRestaurantCache(id);
 
     return updated;
   }
@@ -512,8 +512,8 @@ class RestaurantService {
     // We'll use our repository delete (which sets status to CLOSED)
     await restaurantRepository.delete(id);
 
-    // Invalidate cache
-    await cacheService.clearRestaurantCache();
+    // Invalidate cache — targeted by restaurant ID
+    await cacheService.clearRestaurantCache(id);
 
     return { message: 'Restaurant deleted successfully' };
   }
@@ -533,8 +533,8 @@ class RestaurantService {
 
     const updated = await restaurantRepository.update(id, { isOpen });
 
-    // Invalidate cache
-    await cacheService.clearRestaurantCache();
+    // Invalidate cache — targeted by restaurant ID
+    await cacheService.clearRestaurantCache(id);
 
     // TODO: Emit WebSocket event
 

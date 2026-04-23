@@ -9,11 +9,13 @@ const fs = require('fs');
 const { parse } = require('csv-parse/sync');
 const { slugify } = require('../utils/helpers');
 
-// Reuse existing Redis connection settings
+// BullMQ requires its own ioredis connection — it cannot share the cache client.
+// REDIS_QUEUE_DB separates queue data from cache data (defaults to DB 1).
 const connection = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT, 10) || 6379,
     password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_QUEUE_DB, 10) || 1,
 };
 
 const backgroundQueue = new Queue('background-tasks', {

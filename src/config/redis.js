@@ -10,8 +10,13 @@ let redisClient = null;
 const createRedisClient = () => {
   const redisOptions = {
     retryStrategy: (times) => {
-      const delay = Math.min(times * 50, 2000);
-      logger.warn(`Redis connection attempt ${times}, retrying in ${delay}ms`);
+      // Cap retries — after 20 attempts (~37 seconds of backoff) give up
+      if (times > 20) {
+        logger.error('Redis: maximum reconnection attempts reached. Stopping retries.');
+        return null; // returning null stops retrying; ioredis will emit an error
+      }
+      const delay = Math.min(times * 100, 3000);
+      logger.warn(`Redis connection attempt ${times}, retrying in ${delay}ms...`);
       return delay;
     },
     maxRetriesPerRequest: 3,
@@ -83,12 +88,32 @@ const cacheDel = async (...keys) => {
   }
 };
 
+/**
+ * Delete all keys matching a glob pattern using non-blocking SCAN.
+ * Never use KEYS in production — it blocks the Redis event loop for O(N).
+ */
 const cacheDelPattern = async (pattern) => {
   try {
-    const keys = await getRedisClient().keys(pattern);
-    if (keys.length > 0) {
-      await getRedisClient().del(...keys);
-      logger.debug(`Deleted ${keys.length} cache keys matching "${pattern}"`);
+    const client = getRedisClient();
+    let cursor = '0';
+    let totalDeleted = 0;
+
+    do {
+      // SCAN returns [nextCursor, [key1, key2, ...]]
+      const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = nextCursor;
+
+      if (keys.length > 0) {
+        // Pipeline the DEL commands for efficiency
+        const pipeline = client.pipeline();
+        keys.forEach((key) => pipeline.del(key));
+        await pipeline.exec();
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.debug(`Deleted ${totalDeleted} cache key(s) matching "${pattern}"`);
     }
   } catch (err) {
     logger.error(`Cache DEL pattern error for "${pattern}":`, err);

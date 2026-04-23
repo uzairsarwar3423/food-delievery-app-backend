@@ -12,9 +12,15 @@ services:
       - PORT=5000
       - DATABASE_URL=${DATABASE_URL}
       - DIRECT_URL=${DIRECT_URL}
-      - REDIS_URL=redis://redis:6379
+      # Use authenticated Redis URL — password injected from host env / secrets
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=0
+      - REDIS_TTL=${REDIS_TTL:-3600}
+      # BullMQ uses DB 1 so queue keys never collide with cache keys on DB 0
+      - REDIS_QUEUE_DB=1
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
@@ -52,8 +58,24 @@ services:
     image: redis:7-alpine
     container_name: food-delivery-redis
     restart: always
+    # requirepass enforces authentication.
+    # appendonly + appendfsync=everysec enables AOF persistence so jobs
+    # and cache survive container restarts without risking much data loss.
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    # Do NOT expose Redis port to the host in production.
+    # The backend container reaches Redis via the internal Docker network.
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,3 +85,7 @@ services:
 networks:
   food-delivery-network:
     driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
