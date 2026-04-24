@@ -70,15 +70,21 @@ services:
       --maxmemory-policy allkeys-lru
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # REDISCLI_AUTH is read automatically by redis-cli — avoids passing -a
+      # in the CMD array where ${VAR} expansion is unreliable in Docker.
+      - REDISCLI_AUTH=${REDIS_PASSWORD}
     # Do NOT expose Redis port to the host in production.
     # The backend container reaches Redis via the internal Docker network.
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      # redis-cli picks up REDISCLI_AUTH automatically — no -a flag needed.
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      # Give Redis time to fully boot before the first health check fires.
+      start_period: 15s
     networks:
       - food-delivery-network
 
