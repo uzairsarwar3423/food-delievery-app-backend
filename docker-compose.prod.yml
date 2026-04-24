@@ -5,9 +5,11 @@ services:
   backend:
     # Build from local source — no registry auth needed.
     # To switch back to pulling from GHCR once auth is configured:
-    #   1. Comment out `build: .`
+    #   1. Comment out `build:`
     #   2. Uncomment the image: line below
-    build: .
+    build:
+      context: ./food-delievery-app-backend
+      dockerfile: Dockerfile
     # image: ghcr.io/uzairsarwar3423/food-delievery-app-backend:latest
     container_name: food-delivery-backend
     restart: always
