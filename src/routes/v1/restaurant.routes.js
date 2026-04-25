@@ -10,6 +10,7 @@ const restaurantValidator = require('../../validators/restaurant.validator');
 const validate = require('../../middlewares/validate.middleware');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
 const { upload } = require('../../middlewares/upload.middleware');
+const riderValidator = require('../../validators/rider.validator');
 
 // Public routes
 // Caching for all GET endpoints is handled inside the service layer.
@@ -113,6 +114,7 @@ router.get('/my/riders',
 router.post('/my/riders',
   authenticate,
   authorize('RESTAURANT_OWNER'),
+  validate(riderValidator.registerRider),
   restaurantController.registerRider
 );
 

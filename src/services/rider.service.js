@@ -99,9 +99,28 @@ class RiderService {
 
         const stats = await riderRepository.getStats(rider.id);
 
+        // Fetch active delivery if any
+        const activeDelivery = await prisma.order.findFirst({
+            where: {
+                deliveryPersonId: rider.id,
+                status: {
+                    in: ['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY']
+                }
+            },
+            include: {
+                restaurant: true,
+                deliveryAddress: true,
+                items: true,
+                customer: {
+                    select: { firstName: true, phone: true }
+                }
+            }
+        });
+
         return {
             ...rider,
             stats,
+            activeDelivery
         };
     }
 

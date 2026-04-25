@@ -6,15 +6,15 @@ const { body } = require('express-validator');
 
 const registerRider = [
     body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('phone').notEmpty().withMessage('Phone number is required'),
     body('fullName').notEmpty().withMessage('Full name is required'),
-    body('dateOfBirth').isISO8601().withMessage('Valid date of birth is required (ISO8601)'),
-    body('cnicNumber').matches(/^[0-9]{5}-[0-9]{7}-[0-9]{1}$/).withMessage('Valid CNIC number is required (XXXXX-XXXXXXX-X)'),
-    body('vehicleType').isIn(['BICYCLE', 'MOTORCYCLE', 'CAR', 'VAN']).withMessage('Invalid vehicle type'),
+    body('dateOfBirth').optional().isISO8601().withMessage('Valid date of birth is required if provided'),
+    body('cnicNumber').matches(/^[0-9]{5}-?[0-9]{7}-?[0-9]{1}$|^[0-9]{13}$/).withMessage('Valid CNIC number is required (13 digits)'),
+    body('vehicleType').isIn(['BIKE', 'CYCLE', 'CAR', 'SCOOTER', 'MOTORCYCLE', 'VAN']).withMessage('Invalid vehicle type'),
     body('vehicleNumber').notEmpty().withMessage('Vehicle number is required'),
     body('licenseNumber').notEmpty().withMessage('License number is required'),
-    body('licenseExpiry').isISO8601().withMessage('Valid license expiry date is required (ISO8601)'),
+    body('licenseExpiry').optional().isISO8601().withMessage('Valid license expiry date is required if provided'),
 ];
 
 const updateProfile = [

@@ -37,18 +37,19 @@ class RiderRepository {
     async findByUserId(userId) {
         return prisma.deliveryPerson.findUnique({
             where: { userId },
-            include: {
-                user: {
-                    select: {
-                        email: true,
-                        phone: true,
-                        firstName: true,
-                        lastName: true,
-                        avatarUrl: true,
-                    },
-                },
-                documents: true,
-            },
+      include: {
+        user: {
+          select: {
+            email: true,
+            phone: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
+        restaurant: true,
+        documents: true,
+      },
         });
     }
 
