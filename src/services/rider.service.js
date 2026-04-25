@@ -19,7 +19,7 @@ class RiderService {
        * Register a new rider
        */
     async registerRider(registerData) {
-        const { email, password, phone, fullName, cnicNumber, dateOfBirth, licenseExpiry, ...riderDetails } = registerData;
+        const { email, password, phone, fullName, firstName: _fn, lastName: _ln, cnicNumber, dateOfBirth, licenseExpiry, ...riderDetails } = registerData;
 
         // 1. Check duplicates
         const existingUser = await prisma.user.findFirst({
