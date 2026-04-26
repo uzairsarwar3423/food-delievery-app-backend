@@ -12,9 +12,16 @@ class RiderRepository {
         // Defensive: strip any User-model fields that must never reach DeliveryPerson.
         // This guards against callers accidentally passing firstName/lastName/etc.
         const USER_ONLY_FIELDS = ['firstName', 'lastName', 'email', 'phone', 'password', 'passwordHash', 'fullName', 'role'];
-        const safeRiderData = Object.fromEntries(
-            Object.entries(riderData).filter(([key]) => !USER_ONLY_FIELDS.includes(key))
-        );
+        const safeRiderData = {};
+        
+        Object.keys(riderData).forEach(key => {
+            if (!USER_ONLY_FIELDS.includes(key)) {
+                safeRiderData[key] = riderData[key];
+            }
+        });
+
+        // Debug log keys to verify filtering on server logs
+        console.log('[DEBUG] createRider safeRiderData keys:', Object.keys(safeRiderData));
 
         return prisma.$transaction(async (tx) => {
             // 1. Create User
