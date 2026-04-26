@@ -56,9 +56,14 @@ const startServer = async () => {
     ]);
     logger.info('✅ DB connection pool warmed up');
 
-    // Test Redis connection
-    await getRedisClient().ping();
-    logger.info('✅ Redis connected');
+    // Test Redis connection — non-fatal: server starts even if Redis is unreachable.
+    // Cache helpers already have try/catch and silently no-op on errors.
+    try {
+      await getRedisClient().ping();
+      logger.info('✅ Redis connected');
+    } catch (redisErr) {
+      logger.warn('⚠️  Redis unavailable at startup — continuing without cache. Error:', redisErr.message);
+    }
 
     // Start listening
     server.listen(PORT, () => {
@@ -105,6 +110,13 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason) => {
+  // Suppress Redis reconnection errors — ioredis emits these as unhandled rejections
+  // after max retries are exhausted. The cache helpers handle errors gracefully so
+  // these don't require a server restart.
+  if (reason && reason.code === 'EAI_AGAIN' && reason.syscall === 'getaddrinfo') {
+    logger.warn('Redis DNS resolution failed (EAI_AGAIN) — cache disabled until Redis recovers.');
+    return;
+  }
   logger.error('Unhandled Rejection:', reason);
   gracefulShutdown('unhandledRejection');
 });

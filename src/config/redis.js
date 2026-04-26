@@ -36,7 +36,11 @@ const createRedisClient = () => {
 
   client.on('connect', () => logger.info('Redis client connected'));
   client.on('ready', () => logger.info('Redis client ready'));
-  client.on('error', (err) => logger.error('Redis error:', err));
+  client.on('error', (err) => {
+    // Log but DO NOT re-throw — an unhandled 'error' event crashes the process.
+    // Cache helpers already no-op on errors so the app continues without caching.
+    logger.error('Redis error:', err.message || err);
+  });
   client.on('close', () => logger.warn('Redis connection closed'));
   client.on('reconnecting', () => logger.info('Redis reconnecting...'));
 
