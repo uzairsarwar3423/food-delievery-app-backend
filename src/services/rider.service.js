@@ -19,7 +19,15 @@ class RiderService {
        * Register a new rider
        */
     async registerRider(registerData) {
-        const { email, password, phone, fullName, firstName: _fn, lastName: _ln, cnicNumber, dateOfBirth, licenseExpiry, ...riderDetails } = registerData;
+        // Accept either fullName OR firstName+lastName from the client
+        const {
+            email, password, phone,
+            fullName,
+            firstName: rawFirstName,
+            lastName: rawLastName,
+            cnicNumber, dateOfBirth, licenseExpiry,
+            ...riderDetails
+        } = registerData;
 
         // 1. Check duplicates
         const existingUser = await prisma.user.findFirst({
@@ -37,9 +45,16 @@ class RiderService {
         // 2. Hash password
         const passwordHash = await hashPassword(password);
 
-        // 3. Split name
-        const [firstName, ...rest] = fullName.split(' ');
-        const lastName = rest.join(' ') || '';
+        // 3. Resolve first/last name — support both fullName and firstName+lastName
+        let firstName, lastName;
+        if (fullName) {
+            const [first, ...rest] = fullName.split(' ');
+            firstName = first;
+            lastName = rest.join(' ') || '';
+        } else {
+            firstName = rawFirstName || '';
+            lastName = rawLastName || '';
+        }
 
         // 4. Create in repository
         const userData = {
