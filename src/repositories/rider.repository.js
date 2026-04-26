@@ -9,6 +9,13 @@ class RiderRepository {
        * Create User and DeliveryPerson in a transaction
        */
     async createRider(userData, riderData) {
+        // Defensive: strip any User-model fields that must never reach DeliveryPerson.
+        // This guards against callers accidentally passing firstName/lastName/etc.
+        const USER_ONLY_FIELDS = ['firstName', 'lastName', 'email', 'phone', 'password', 'passwordHash', 'fullName', 'role'];
+        const safeRiderData = Object.fromEntries(
+            Object.entries(riderData).filter(([key]) => !USER_ONLY_FIELDS.includes(key))
+        );
+
         return prisma.$transaction(async (tx) => {
             // 1. Create User
             const user = await tx.user.create({
@@ -22,7 +29,7 @@ class RiderRepository {
             const deliveryPerson = await tx.deliveryPerson.create({
                 data: {
                     userId: user.id,
-                    ...riderData,
+                    ...safeRiderData,
                     status: 'OFFLINE',
                 },
             });
